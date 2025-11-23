@@ -1,12 +1,14 @@
 import os
+import sys
 import tempfile
-from PIL import Image
+from pathlib import Path
 
+from PIL import Image
 from datasets import load_dataset
-from transformers import (
-    AutoImageProcessor,
-    set_seed,
-)
+from transformers import AutoImageProcessor, set_seed
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
 from gcs_utils import get_gcs_fs, gcs_uri
 
 
@@ -17,9 +19,9 @@ def main():
     # -------------------------
     # 0) Fast dev run toggles
     # -------------------------
-    FAST_DEV_RUN = os.getenv("FAST_DEV_RUN", "1").lower() in {"1", "true", "yes"}
-    TRAIN_SAMPLES = int(os.getenv("TRAIN_SAMPLES", "200"))
-    EVAL_SAMPLES = int(os.getenv("EVAL_SAMPLES", "200"))
+    FAST_DEV_RUN = os.getenv("FAST_DEV_RUN") == "1"
+    TRAIN_SAMPLES = int(os.getenv("TRAIN_SAMPLES")) if os.getenv("TRAIN_SAMPLES") else None
+    EVAL_SAMPLES = int(os.getenv("EVAL_SAMPLES")) if os.getenv("EVAL_SAMPLES") else None
 
     if FAST_DEV_RUN:
         print("Fast dev run enabled")
@@ -36,6 +38,8 @@ def main():
 
     # Small subsample for quick local test, or use the full splits
     if FAST_DEV_RUN:
+        if TRAIN_SAMPLES is None or EVAL_SAMPLES is None:
+            raise ValueError("TRAIN_SAMPLES and EVAL_SAMPLES must be set when FAST_DEV_RUN is enabled")
         train_ds = ds["train"].shuffle(seed=42).select(range(min(TRAIN_SAMPLES, len(ds["train"]))))
         eval_ds = ds["validation"].shuffle(seed=42).select(range(min(EVAL_SAMPLES, len(ds["validation"]))))
     else:

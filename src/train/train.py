@@ -1,6 +1,7 @@
-import os
 import json
+import os
 import shutil
+import sys
 from pathlib import Path
 
 os.environ.setdefault("WANDB_SILENT", "true")
@@ -20,12 +21,15 @@ from transformers import (
 )
 import evaluate
 import wandb
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
 from gcs_utils import get_gcs_fs, gcs_uri
 
 
 def main():
     set_seed(42)
-    print("Running train_only.py")
+    print("Running train/train.py")
 
     # -------------------------
     # 1) Load processed data from shared volume

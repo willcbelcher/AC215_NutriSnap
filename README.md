@@ -53,16 +53,13 @@ Environment overrides:
 - `GCS_BUCKET` (default `nutrisnap-data`)
 - `GCS_DATA_VERSION` (default `v1`)
 
-1. **`src/preprocess.py`**  
+1. **`src/preprocess/preprocess.py`**  
    Downloads Food-101, builds label maps/metadata, materializes the pixel-value tensors, and saves those processed datasets plus `metadata.json` to `gs://<bucket>/<version>/train|eval`.
 
-2. **`src/train_only.py`**  
-   Loads the versioned datasets (already tensorized) from the bucket, sets the format to torch, and fine-tunes the ViT model.
+2. **`src/train/train.py`**  
+   Loads the processed datasets from GCS, configures the Hugging Face `Trainer`, and fine-tunes the ViT model end-to-end.
 
-3. **`src/train.py `**  
-   End-to-end pipeline that skips the raw download step by reusing the preprocessed data directly from GCS.
-
-`src/Dockerfile.train` and `src/Dockerfile.preprocess` still build the respective containers; they now require ADC credentials to be mounted so the python scripts can reach GCS.
+`src/preprocess/Dockerfile` and `src/train/Dockerfile` build the respective containers; they require ADC credentials to be mounted so the python scripts can reach GCS.
 
 ## Running
 
@@ -80,11 +77,11 @@ Environment overrides:
 3. Launch Docker and preprocess:
    ```bash
    docker-compose up -d
-   docker exec -it ns-preprocess bash -c "source /home/app/.venv/bin/activate && python preprocess.py"
+   docker exec -it ns-preprocess python preprocess/preprocess.py
    ```
 4. Train with the saved versioned data:
    ```bash
-   docker exec -it ns-train bash -c "source /home/app/.venv/bin/activate && python train.py"
+   docker exec -it ns-train python train/train.py
    ```
 
 ## App Mockup

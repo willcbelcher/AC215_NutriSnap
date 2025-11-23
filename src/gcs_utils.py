@@ -4,9 +4,9 @@ from functools import lru_cache
 import gcsfs
 
 
-GCS_PROJECT = os.getenv("GCS_PROJECT", "ac215-471519")
-GCS_BUCKET = os.getenv("GCS_BUCKET", "nutrisnap-data")
-GCS_DATA_VERSION = os.getenv("GCS_DATA_VERSION", "v1")
+GCS_PROJECT = os.getenv("GCS_PROJECT")
+GCS_BUCKET = os.getenv("GCS_BUCKET")
+GCS_DATA_VERSION = os.getenv("GCS_DATA_VERSION")
 
 @lru_cache(maxsize=1)
 def get_gcs_fs() -> gcsfs.GCSFileSystem:
