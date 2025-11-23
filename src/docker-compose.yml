@@ -5,16 +5,16 @@ services:
   nutrisnap-preprocess:
     build:
       context: .
-      dockerfile: Dockerfile.preprocess
+      dockerfile: preprocess/Dockerfile
     container_name: ns-preprocess
     environment:
-      - FAST_DEV_RUN=1
-      - TRAIN_SAMPLES=200
-      - EVAL_SAMPLES=200
-      - PYTHONUNBUFFERED=1
+      GOOGLE_APPLICATION_CREDENTIALS: /secrets/sa.json
+    env_file:
+      - .env
     volumes:
       - shared-data:/app/data
       - ./cache:/root/.cache
+      - ../secrets/nutrisnap-sa.json:/secrets/sa.json:ro
     restart: "no"
     logging:
       driver: "json-file"
@@ -25,18 +25,17 @@ services:
   nutrisnap-training:
     build:
       context: .
-      dockerfile: Dockerfile.train
+      dockerfile: train/Dockerfile
     container_name: ns-train
     environment:
-      - WANDB_SILENT=false
-      - WANDB_CONSOLE=wrap
-      - WANDB_MODE=online
-      - WANDB_API_KEY=${WANDB_API_KEY}
-      - PYTHONUNBUFFERED=1
+      GOOGLE_APPLICATION_CREDENTIALS: /secrets/sa.json
+    env_file:
+      - .env
     volumes:
       - shared-data:/app/data
       - ./output:/app/food101-vit-model
       - ./cache:/root/.cache
+      - ../secrets/nutrisnap-sa.json:/secrets/sa.json:ro
     restart: "no"
     logging:
       driver: "json-file"
