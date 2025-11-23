@@ -37,4 +37,4 @@ COPY --chown=app:app . ./
 RUN mkdir -p /app/data
 
 # Keep container running for manual execution
-CMD ["sleep", "infinity"]
+CMD ["python", "preprocess.py"]

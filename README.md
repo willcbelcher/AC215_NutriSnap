@@ -44,33 +44,48 @@ where top_*n* means the true label is in the top *n* predictions from the model
 
 **Data Pipeline**
 
-## Data Pipeline Overview
+## Versioned Data Pipeline Overview
 
-1. **`src/preprocess.py`**
-   This script handles preprocessing the Food 101 dataset. It creates label maps, initializes the `AutoImageProcessor`. Image preprocessing involves reducing image sizes and normalizing image contents. Converts all images to RGB.
+All processed artifacts are written to Google Cloud Storage so we can track versions by folder name (default `v1`). Authentication relies on Application Default Credentials (ADC), so set `GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json` (or use `gcloud auth application-default login`) before running the scripts.
 
-2. **`src/train_only.py`**
-   Finetunes models using the preprocessed image data. Finetuning targets are Vision Transformers such as google VIT.
+Environment overrides:
+- `GCS_PROJECT` (default `ac215-471519`)
+- `GCS_BUCKET` (default `nutrisnap-data`)
+- `GCS_DATA_VERSION` (default `v1`)
 
-3. **`src/train.py `**
-   A combination of (1) and (2) which runs end-to-end
+1. **`src/preprocess.py`**  
+   Downloads Food-101, builds label maps/metadata, materializes the pixel-value tensors, and saves those processed datasets plus `metadata.json` to `gs://<bucket>/<version>/train|eval`.
 
-## Data Pipeline Overview
-**`src/Dockerfile.train`, `src/Dockerfile.preprocess`**
-Our Dockerfiles used for running the train and preprocessing scripts. 
+2. **`src/train_only.py`**  
+   Loads the versioned datasets (already tensorized) from the bucket, sets the format to torch, and fine-tunes the ViT model.
+
+3. **`src/train.py `**  
+   End-to-end pipeline that skips the raw download step by reusing the preprocessed data directly from GCS.
+
+`src/Dockerfile.train` and `src/Dockerfile.preprocess` still build the respective containers; they now require ADC credentials to be mounted so the python scripts can reach GCS.
 
 ## Running
 
-The following commands run the pipeline:
-
-```bash
-docker-compose up -d
-docker exec -it ns-preprocess bash -c "source /home/app/.venv/bin/activate && bash"
-python preprocess.py
-
-# to reset containers after code changes - should be a faster way but this just works for now
-docker-compose down && docker-compose build && docker-compose up -d
-```
+1. Authenticate for GCS access (choose one):
+   ```bash
+   export GOOGLE_APPLICATION_CREDENTIALS=/path/to/sa.json
+   # or
+   gcloud auth application-default login   # persists ADC credentials locally
+   ```
+2. (Optional) point to a different bucket/version:
+   ```bash
+   export GCS_BUCKET=nutrisnap-data
+   export GCS_DATA_VERSION=v1
+   
+3. Launch Docker and preprocess:
+   ```bash
+   docker-compose up -d
+   docker exec -it ns-preprocess bash -c "source /home/app/.venv/bin/activate && python preprocess.py"
+   ```
+4. Train with the saved versioned data:
+   ```bash
+   docker exec -it ns-train bash -c "source /home/app/.venv/bin/activate && python train.py"
+   ```
 
 ## App Mockup
 
