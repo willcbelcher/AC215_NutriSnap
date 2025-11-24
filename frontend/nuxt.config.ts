@@ -6,4 +6,12 @@ export default defineNuxtConfig({
 	modules: ['@nuxt/ui'],
 	css: ['~/assets/css/main.css'],
 	vite: { plugins: [tailwindcss()] },
+	runtimeConfig: {
+		// Private keys are only available on the server
+		apiBase: 'http://ns_backend:8000',
+		// Public keys that are exposed to the client
+		public: {
+			apiBase: 'http://localhost:8000',
+		},
+	},
 });

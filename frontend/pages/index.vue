@@ -142,13 +142,15 @@
 import { computed } from 'vue';
 
 // 1. Fetch data from backend
-// Note: In Docker, the browser (client) can't access 'backend:8000', it must use localhost:8000
+const config = useRuntimeConfig();
 const {
 	data: meals,
 	pending,
 	error,
 	refresh,
-} = await useFetch('http://localhost:8000/dashboard');
+} = await useFetch('/dashboard', {
+	baseURL: import.meta.server ? config.apiBase : config.public.apiBase,
+});
 
 // 2. Computed Properties for logic
 const recentMeals = computed(() => {
