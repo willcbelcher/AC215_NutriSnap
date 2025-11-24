@@ -10,6 +10,18 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     name = Column(String)
     meals = relationship("Meal", back_populates="owner")
+    symptoms = relationship("Symptom", back_populates="owner")
+
+class Symptom(Base):
+    __tablename__ = "symptoms"
+    id = Column(Integer, primary_key=True, index=True)
+    symptom_name = Column(String)
+    severity = Column(Integer) # 1-10
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    user_id = Column(Integer, ForeignKey("users.id"))
+    owner = relationship("User", back_populates="symptoms")
 
 class Meal(Base):
     __tablename__ = "meals"

@@ -4,7 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import requests
 import models, schemas, database
-from typing import List
+import random
+from typing import List, Union
+from sqlalchemy import desc
 
 # Create tables on startup
 models.Base.metadata.create_all(bind=database.engine)
@@ -30,27 +32,57 @@ def get_dashboard(db: Session = Depends(database.get_db)):
     meals = db.query(models.Meal).filter(models.Meal.user_id == 1).order_by(models.Meal.created_at.desc()).all()
     return meals
 
-@app.post("/log", response_model=schemas.MealOut)
-async def log_meal(file: UploadFile = File(...), db: Session = Depends(database.get_db)):
-    # 1. READ IMAGE
-    file_bytes = await file.read()
-    
-    # 2. CALL AI SERVICE (The other container)
-    # Ensure your AI container is named 'cv_model' in docker-compose
-    try:
-        # We send the bytes to the AI service
-        response = requests.post(
-            "http://cv_model:8001/predict", 
-            files={"file": (file.filename, file_bytes, file.content_type)}
-        )
-        ai_data = response.json()
-    except Exception as e:
-        print(f"AI Service failed: {e}")
-        # Fallback dummy data if AI service is down
-        ai_data = {"foods": "Error/Manual", "macros": {"protein":0, "carbs":0, "fat":0}, "triggers": "Unknown"}
+@app.get("/dashboard/symptoms", response_model=List[schemas.SymptomOut])
+def get_symptoms(db: Session = Depends(database.get_db)):
+    symptoms = db.query(models.Symptom).filter(models.Symptom.user_id == 1).order_by(models.Symptom.created_at.desc()).all()
+    return symptoms
 
-    # 3. SAVE TO DB
-    # Create dummy user if not exists (Prototype only)
+@app.get("/dashboard/recent")
+def get_recent_activity(db: Session = Depends(database.get_db)):
+    # Get recent meals and symptoms, combine and sort
+    meals = db.query(models.Meal).filter(models.Meal.user_id == 1).order_by(models.Meal.created_at.desc()).limit(5).all()
+    symptoms = db.query(models.Symptom).filter(models.Symptom.user_id == 1).order_by(models.Symptom.created_at.desc()).limit(5).all()
+    
+    # Combine and sort by created_at
+    activity = []
+    for m in meals:
+        activity.append({
+            "type": "meal",
+            "data": m,
+            "date": m.created_at
+        })
+    for s in symptoms:
+        activity.append({
+            "type": "symptom",
+            "data": s,
+            "date": s.created_at
+        })
+    
+    # Sort descending
+    activity.sort(key=lambda x: x["date"], reverse=True)
+    return activity[:5] # Return top 5 mixed
+
+@app.get("/dashboard/triggers")
+def get_triggers(db: Session = Depends(database.get_db)):
+    # Simple mock analysis for prototype
+    # In a real app, this would correlate meals with symptoms
+    return ["Lactose", "Gluten", "Spicy Food"]
+
+@app.post("/log/food", response_model=schemas.MealOut)
+async def log_food(file: UploadFile = File(...), db: Session = Depends(database.get_db)):
+    # SIMULATED AI SERVICE
+    # We ignore the file content for now and generate random data
+    
+    possible_foods = [
+        {"foods": "Grilled Salmon, Asparagus", "macros": {"protein": 35, "carbs": 5, "fat": 15}, "triggers": "None"},
+        {"foods": "Cheeseburger, Fries", "macros": {"protein": 25, "carbs": 60, "fat": 30}, "triggers": "Gluten, Lactose"},
+        {"foods": "Oatmeal, Berries", "macros": {"protein": 8, "carbs": 40, "fat": 4}, "triggers": "None"},
+        {"foods": "Spicy Curry, Rice", "macros": {"protein": 15, "carbs": 50, "fat": 12}, "triggers": "Spicy Food"},
+    ]
+    
+    ai_data = random.choice(possible_foods)
+
+    # Ensure user exists
     user = db.query(models.User).filter(models.User.id == 1).first()
     if not user:
         user = models.User(email="demo@test.com", name="Demo")
@@ -58,7 +90,7 @@ async def log_meal(file: UploadFile = File(...), db: Session = Depends(database.
         db.commit()
 
     new_meal = models.Meal(
-        image_url="placeholder.jpg",
+        image_url="https://via.placeholder.com/150?text=Food", # Placeholder since we aren't storing the file
         identified_foods=ai_data.get("foods"),
         protein=ai_data["macros"]["protein"],
         carbs=ai_data["macros"]["carbs"],
@@ -72,3 +104,25 @@ async def log_meal(file: UploadFile = File(...), db: Session = Depends(database.
     db.refresh(new_meal)
     
     return new_meal
+
+@app.post("/log/symptom", response_model=schemas.SymptomOut)
+def log_symptom(symptom: schemas.SymptomCreate, db: Session = Depends(database.get_db)):
+    # Ensure user exists
+    user = db.query(models.User).filter(models.User.id == 1).first()
+    if not user:
+        user = models.User(email="demo@test.com", name="Demo")
+        db.add(user)
+        db.commit()
+        
+    new_symptom = models.Symptom(
+        symptom_name=symptom.symptom_name,
+        severity=symptom.severity,
+        notes=symptom.notes,
+        user_id=1 # Hardcoded for prototype
+    )
+    
+    db.add(new_symptom)
+    db.commit()
+    db.refresh(new_symptom)
+    
+    return new_symptom

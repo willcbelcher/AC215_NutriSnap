@@ -16,3 +16,18 @@ class MealOut(BaseModel):
     created_at: datetime
     class Config:
         from_attributes = True
+
+class SymptomCreate(BaseModel):
+    user_id: int
+    symptom_name: str
+    severity: int
+    notes: Optional[str] = None
+
+class SymptomOut(BaseModel):
+    id: int
+    symptom_name: str
+    severity: int
+    notes: Optional[str] = None
+    created_at: datetime
+    class Config:
+        from_attributes = True

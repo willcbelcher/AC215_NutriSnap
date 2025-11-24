@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from database import Base, SQLALCHEMY_DATABASE_URL
-from models import User, Meal, Base
+from models import User, Meal, Symptom, Base
 import os
 
 # 1. Setup the database connection
@@ -69,6 +69,28 @@ def seed():
         print(f"🍱 Added {len(meals_data)} sample meals.")
     else:
         print("🍱 Meals already exist for this user.")
+
+    # 5. Create Sample Symptoms
+    if not user.symptoms:
+        symptoms_data = [
+            Symptom(
+                symptom_name="Bloating",
+                severity=6,
+                notes="Felt bloated after lunch",
+                user_id=user.id
+            ),
+            Symptom(
+                symptom_name="Headache",
+                severity=4,
+                notes="Mild headache in the afternoon",
+                user_id=user.id
+            )
+        ]
+        db.add_all(symptoms_data)
+        db.commit()
+        print(f"🤒 Added {len(symptoms_data)} sample symptoms.")
+    else:
+        print("🤒 Symptoms already exist for this user.")
 
     print("✅ Seeding complete!")
     db.close()
