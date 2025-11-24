@@ -66,3 +66,4 @@ food101-vit/
 # Documentation
 README.md
 *.md
+!docs/application_design.md

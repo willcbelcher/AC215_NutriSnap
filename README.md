@@ -9,12 +9,13 @@ NutriSnap
 **Project**
 The project aims to simplify the process of food tracking and nutritional analysis by replacing cumbersome manual data entry with a seamless, AI-powered system that accepts multi-modal input like photos and voice.
 
-### Milestone2
+## Milestone2
 
 In this milestone, we have the components for data management, including versioning, as well as the computer vision and language models.
 
 **Data**
 We use the Food 101 dataset from HuggingFace for
+
 - Size and scope: 101,000 RGB food images across 101 classes (≈1,000 per class).
 - Standard split: ~75,750 for training and ~25,250 for validation/test (per class: 750 train, 250 val/test).
 - Source: Collected from Foodspotting; images vary in resolution and background context.
@@ -22,33 +23,39 @@ We use the Food 101 dataset from HuggingFace for
 - Evaluation: Commonly reported with top-1 accuracy on the validation/test split.
 
 **Model Finetuning Overview**
-## Training setup
+
+### Training setup
+
 - No layers are frozen. We use full fine-tuning.
 - TrainingArguments: batch size 64 (train) / 64 (eval), lr=5e-5, epochs = 1 (fast) or 3 (full), weight decay 0.0.
 - Mixed precision (fp16) on CUDA; otherwise CPU. MPS detection exists but not enabled.
 - No periodic eval/checkpointing configured during training; final eval after training.
 - Default LR scheduler (linear, no warmup) implied.
-- Experiment with finetuning both `google/vit-base-patch16-224-in21k` and `facebook/deit-tiny-patch16-224` 
+- Experiment with finetuning both `google/vit-base-patch16-224-in21k` and `facebook/deit-tiny-patch16-224`
 
-## Metrics
+### Metrics
+
 - Custom compute_metrics: reports Top-1 and Top-5 accuracy from logits.
 - Initializes Weights & Biases run with minimal config.
 
-## Results
+### Results
+
 See the training loss curve at: `docs/train_loss.png`
 Best results are from model `facebook/deit-tiny-patch16-224`
+
 - eval_top_1: 0.613
 - eval_top_5: 0.866
 
-where top_*n* means the true label is in the top *n* predictions from the model
+where top\__n_ means the true label is in the top _n_ predictions from the model
 
 **Data Pipeline**
 
-## Versioned Data Pipeline Overview
+### Versioned Data Pipeline Overview
 
 All processed artifacts are written to Google Cloud Storage so we can track versions by folder name (default `v1`). Authentication relies on Application Default Credentials (ADC), so set `GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json` (or use `gcloud auth application-default login`) before running the scripts.
 
 Environment overrides:
+
 - `GCS_PROJECT` (default `ac215-471519`)
 - `GCS_BUCKET` (default `nutrisnap-data`)
 - `GCS_DATA_VERSION` (default `v1`)
@@ -61,7 +68,7 @@ Environment overrides:
 
 `src/preprocess/Dockerfile` and `src/train/Dockerfile` build the respective containers; they require ADC credentials to be mounted so the python scripts can reach GCS.
 
-## Running
+### Running
 
 1. Authenticate for GCS access (choose one):
    ```bash
@@ -73,7 +80,8 @@ Environment overrides:
    ```bash
    export GCS_BUCKET=nutrisnap-data
    export GCS_DATA_VERSION=v1
-   
+
+   ```
 3. Launch Docker and preprocess:
    ```bash
    docker-compose up -d
@@ -84,10 +92,29 @@ Environment overrides:
    docker exec -it ns-train python train/train.py
    ```
 
-## App Mockup
+### App Mockup
 
 [Here](https://www.figma.com/proto/Ztdsl6iNBXV3wxQly5oRDY/Tummy?node-id=117-429&t=Cqv92EjHamGnqijE-1) is a link to our Figma mockup of a potential prototype of this application.
 
-## Artifacts
+### Artifacts
 
 In the `docs` folder we have uploaded screenshots to satisfy the requirements for milestone 2. For objective 1, the virtual environments, the relevant image is `environment.jpeg`. For the containerized pipeline, the `modelrun.jpeg` files show the output of our model running on a small set of data. The full model is being trained in GCP. The pipeline is split into preprocessing and training steps.
+
+## Milestone 4
+
+Milestone 4 covers application development prior to cloud deployment.
+
+1. Application Design Document - located in the `docs/` folder.
+2. API and Frontend - there are associated frontend and backend folders. The application can be started via commands below.
+3. CI and Testing: VINEET TODO
+4. Data versioning and reproducibility: PB to do
+5. PB TODO
+
+To run the application, after cloning, simply run:
+
+```bash
+docker compose up -d --build # Starts the frontend, backend, and database in containers
+docker exec ns_backend python seed.py # Seeds the database
+```
+
+The frontend can then be accessed via http://localhost:3000
