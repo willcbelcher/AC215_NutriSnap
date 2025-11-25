@@ -5,3 +5,7 @@ psycopg2-binary
 python-multipart
 requests
 pydantic
+torch
+transformers
+Pillow
+gcsfs

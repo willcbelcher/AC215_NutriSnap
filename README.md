@@ -82,15 +82,41 @@ Environment overrides:
    export GCS_DATA_VERSION=v1
 
    ```
-3. Launch Docker and preprocess:
+3. Launch the preprocessing job (builds the image the first time and mounts `./secrets/nutrisnap-sa.json` inside the container):
    ```bash
-   docker-compose up -d
-   docker exec -it ns-preprocess python preprocess/preprocess.py
+   docker compose run --rm --profile ml nutrisnap-preprocess
    ```
 4. Train with the saved versioned data:
    ```bash
-   docker exec -it ns-train python train/train.py
+   docker compose run --rm --profile ml nutrisnap-training
    ```
+
+### Model artifact storage
+
+To serve the latest fine-tuned ViT from the app backend:
+
+1. Export the Hugging Face model directory so it contains at least `config.json`, `model.safetensors`, `preprocessor_config.json`, `tokenizer.json`, and `tokenizer_config.json`.
+2. Upload the folder to Google Cloud Storage (adjust the path if you keep a different version directory):
+   ```bash
+   export MODEL_DIR=./food101-vit-model
+   export MODEL_VERSION=v1
+   gsutil -m rsync -r "${MODEL_DIR}" "gs://nutrisnap-data/models/${MODEL_VERSION}"
+   ```
+3. Point the backend to that folder via environment variables:
+   ```bash
+   export MODEL_GCS_URI="gs://nutrisnap-data/models/${MODEL_VERSION}"
+   # Optional: set when the exported folder lacks tokenizer/preprocessor files
+   export MODEL_BASE_PROCESSOR="google/vit-base-patch16-224-in21k"
+   # Optional: set when config.json lacks a model_type field
+   export MODEL_DEFAULT_MODEL_TYPE="vit"
+   export GOOGLE_APPLICATION_CREDENTIALS=$PWD/secrets/nutrisnap-sa.json
+   ```
+4. When running with Docker Compose (see below), those variables are injected into the backend container so it can download and cache the artifact during startup.
+
+### Docker Compose Profiles
+
+- `app`: Spins up the PostgreSQL database, FastAPI backend, and Nuxt frontend (`docker compose --profile app up -d`).
+- `ml`: Builds and runs the data preprocessing and training jobs on demand, persisting shared artifacts via the `shared-data` volume (`docker compose run --rm --profile ml …`).
 
 ### App Mockup
 
@@ -113,8 +139,31 @@ Milestone 4 covers application development prior to cloud deployment.
 To run the application, after cloning, simply run:
 
 ```bash
-docker compose up -d --build # Starts the frontend, backend, and database in containers
-docker exec ns_backend python seed.py # Seeds the database
+docker compose --profile app up -d --build # Starts the frontend, backend, and database in containers
+docker compose --profile app exec ns_backend python seed.py # Seeds the database
 ```
 
 The frontend can then be accessed via http://localhost:3000
+
+### Testing inference end-to-end
+
+1. Ensure the model artifact is uploaded and the backend has access to credentials (see *Model artifact storage* above).
+2. Start the stack with the `app` profile so the backend downloads the model into its container (include `MODEL_BASE_PROCESSOR` when tokenizer files are absent and `MODEL_DEFAULT_MODEL_TYPE` when `config.json` lacks that key):
+   ```bash
+   MODEL_GCS_URI=gs://nutrisnap-models/v1 \
+   MODEL_BASE_PROCESSOR=google/vit-base-patch16-224-in21k \
+   MODEL_DEFAULT_MODEL_TYPE=vit \
+   docker compose --profile app up -d --build
+   ```
+3. Send a request to `POST /log/food` with any JPG/PNG file to verify inference:
+   ```bash
+   curl -X POST http://localhost:8000/log/food \
+     -H "Content-Type: multipart/form-data" \
+     -F "file=@/path/to/food.jpg"
+   ```
+   The JSON response should include `identified_foods` populated with the model’s top predictions.
+4. To rotate to a new model version, re-upload the folder to a new GCS path, update `MODEL_GCS_URI` (plus `MODEL_BASE_PROCESSOR`/`MODEL_DEFAULT_MODEL_TYPE` when relevant), and restart the backend container:
+   ```bash
+   export MODEL_GCS_URI=gs://nutrisnap-data/models/v2
+   docker compose --profile app up -d --build backend
+   ```

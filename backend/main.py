@@ -4,9 +4,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import requests
 import models, schemas, database
-import random
 from typing import List, Union
 from sqlalchemy import desc
+from inference import predict as run_inference
+
+NUTRITION_LOOKUP = {
+    "ramen": {"macros": {"protein": 10, "carbs": 40, "fat": 1}, "triggers": "None"},
+    "grilled_salmon": {"macros": {"protein": 34, "carbs": 0, "fat": 14}, "triggers": "None"},
+    "cheeseburger": {"macros": {"protein": 28, "carbs": 33, "fat": 32}, "triggers": "Gluten, Lactose"},
+    "oatmeal": {"macros": {"protein": 6, "carbs": 27, "fat": 3}, "triggers": "None"},
+    "spaghetti_bolognese": {"macros": {"protein": 22, "carbs": 63, "fat": 17}, "triggers": "Gluten"},
+}
+
+DEFAULT_MACROS = {"protein": 0, "carbs": 0, "fat": 0}
 
 # Create tables on startup
 models.Base.metadata.create_all(bind=database.engine)
@@ -70,17 +80,24 @@ def get_triggers(db: Session = Depends(database.get_db)):
 
 @app.post("/log/food", response_model=schemas.MealOut)
 async def log_food(file: UploadFile = File(...), db: Session = Depends(database.get_db)):
-    # SIMULATED AI SERVICE
-    # We ignore the file content for now and generate random data
-    
-    possible_foods = [
-        {"foods": "Grilled Salmon, Asparagus", "macros": {"protein": 35, "carbs": 5, "fat": 15}, "triggers": "None"},
-        {"foods": "Cheeseburger, Fries", "macros": {"protein": 25, "carbs": 60, "fat": 30}, "triggers": "Gluten, Lactose"},
-        {"foods": "Oatmeal, Berries", "macros": {"protein": 8, "carbs": 40, "fat": 4}, "triggers": "None"},
-        {"foods": "Spicy Curry, Rice", "macros": {"protein": 15, "carbs": 50, "fat": 12}, "triggers": "Spicy Food"},
-    ]
-    
-    ai_data = random.choice(possible_foods)
+    image_bytes = await file.read()
+    if not image_bytes:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+
+    try:
+        predictions = run_inference(image_bytes)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Inference failed: {exc}") from exc
+
+    if not predictions.get("top1"):
+        raise HTTPException(status_code=500, detail="Model returned no predictions.")
+
+    top_label = predictions["top1"][0]["label"]
+    label_key = top_label.replace(" ", "_").lower()
+    nutrition = NUTRITION_LOOKUP.get(label_key, {})
+    macros = nutrition.get("macros", DEFAULT_MACROS)
+    triggers = nutrition.get("triggers")
+    identified_foods = ", ".join([pred["label"] for pred in predictions.get("topk", [])]) or top_label
 
     # Ensure user exists
     user = db.query(models.User).filter(models.User.id == 1).first()
@@ -91,11 +108,11 @@ async def log_food(file: UploadFile = File(...), db: Session = Depends(database.
 
     new_meal = models.Meal(
         image_url="https://via.placeholder.com/150?text=Food", # Placeholder since we aren't storing the file
-        identified_foods=ai_data.get("foods"),
-        protein=ai_data["macros"]["protein"],
-        carbs=ai_data["macros"]["carbs"],
-        fat=ai_data["macros"]["fat"],
-        triggers=ai_data.get("triggers"),
+        identified_foods=identified_foods,
+        protein=macros["protein"],
+        carbs=macros["carbs"],
+        fat=macros["fat"],
+        triggers=triggers,
         user_id=1
     )
     

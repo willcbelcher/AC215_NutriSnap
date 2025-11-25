@@ -1,10 +1,11 @@
-version: '3.8'
+version: '3.9'
 
 services:
-  # 1. Database
   db:
     image: postgres:14-alpine
     container_name: ns_db
+    profiles:
+      - app
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
@@ -14,34 +15,81 @@ services:
     ports:
       - '5432:5432'
 
-  # 2. Main Backend (Business Logic + DB)
   backend:
     build: ./backend
     container_name: ns_backend
+    profiles:
+      - app
     depends_on:
       - db
     environment:
       DATABASE_URL: postgresql://user:password@db:5432/nutrisnap_db
+      MODEL_GCS_URI: ${MODEL_GCS_URI:-gs://nutrisnap-models/v1}
+      MODEL_BASE_PROCESSOR: google/vit-base-patch16-224-in21k
+      MODEL_DEFAULT_MODEL_TYPE: vit
+      GOOGLE_APPLICATION_CREDENTIALS: /secrets/sa.json
     ports:
       - '8000:8000'
+    volumes:
+      - ./secrets/nutrisnap-sa.json:/secrets/sa.json:ro
 
-  # # 3. AI Service (Computer Vision)
-  # cv_model:
-  #   build: ./nutrisnap-cv-model
-  #   container_name: ns_cv_model
-  #   ports:
-  #     - "8001:8000" # Maps localhost:8001 to container:8000
-
-  # 4. Frontend (UI)
   frontend:
     build: ./frontend
     container_name: ns_frontend
+    profiles:
+      - app
     ports:
       - '3000:3000'
     environment:
-      # Use this if you do Server Side Rendering calls,
-      # but mostly you'll call localhost:8000 from the browser
       API_BASE_URL: http://backend:8000
+
+  nutrisnap-preprocess:
+    build:
+      context: ./src
+      dockerfile: preprocess/Dockerfile
+    container_name: ns-preprocess
+    profiles:
+      - ml
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /secrets/sa.json
+    env_file:
+      - ./src/.env
+    volumes:
+      - shared-data:/app/data
+      - ./src/cache:/root/.cache
+      - ./secrets/nutrisnap-sa.json:/secrets/sa.json:ro
+    restart: "no"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  nutrisnap-training:
+    build:
+      context: ./src
+      dockerfile: train/Dockerfile
+    container_name: ns-train
+    profiles:
+      - ml
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /secrets/sa.json
+    env_file:
+      - ./src/.env
+    volumes:
+      - shared-data:/app/data
+      - ./src/output:/app/food101-vit-model
+      - ./src/cache:/root/.cache
+      - ./secrets/nutrisnap-sa.json:/secrets/sa.json:ro
+    restart: "no"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    tty: true
+    stdin_open: true
 
 volumes:
   postgres_data:
+  shared-data:
