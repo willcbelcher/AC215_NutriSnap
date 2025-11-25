@@ -100,11 +100,11 @@ To serve the latest fine-tuned ViT from the app backend:
    ```bash
    export MODEL_DIR=./food101-vit-model
    export MODEL_VERSION=v1
-   gsutil -m rsync -r "${MODEL_DIR}" "gs://nutrisnap-data/models/${MODEL_VERSION}"
+   gsutil -m rsync -r "${MODEL_DIR}" "gs://nutrisnap-models/${MODEL_VERSION}"
    ```
 3. Point the backend to that folder via environment variables:
    ```bash
-   export MODEL_GCS_URI="gs://nutrisnap-data/models/${MODEL_VERSION}"
+   export MODEL_GCS_URI="gs://nutrisnap-models/${MODEL_VERSION}"
    # Optional: set when the exported folder lacks tokenizer/preprocessor files
    export MODEL_BASE_PROCESSOR="google/vit-base-patch16-224-in21k"
    # Optional: set when config.json lacks a model_type field
@@ -164,6 +164,6 @@ The frontend can then be accessed via http://localhost:3000
    The JSON response should include `identified_foods` populated with the model’s top predictions.
 4. To rotate to a new model version, re-upload the folder to a new GCS path, update `MODEL_GCS_URI` (plus `MODEL_BASE_PROCESSOR`/`MODEL_DEFAULT_MODEL_TYPE` when relevant), and restart the backend container:
    ```bash
-   export MODEL_GCS_URI=gs://nutrisnap-data/models/v2
+   export MODEL_GCS_URI=gs://nutrisnap-models/v1
    docker compose --profile app up -d --build backend
    ```
