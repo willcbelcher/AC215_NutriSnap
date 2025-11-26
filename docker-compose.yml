@@ -1,0 +1,95 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:14-alpine
+    container_name: ns_db
+    profiles:
+      - app
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: nutrisnap_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+
+  backend:
+    build: ./backend
+    container_name: ns_backend
+    profiles:
+      - app
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/nutrisnap_db
+      MODEL_GCS_URI: ${MODEL_GCS_URI:-gs://nutrisnap-models/v1}
+      MODEL_BASE_PROCESSOR: google/vit-base-patch16-224-in21k
+      MODEL_DEFAULT_MODEL_TYPE: vit
+      GOOGLE_APPLICATION_CREDENTIALS: /secrets/sa.json
+    ports:
+      - '8000:8000'
+    volumes:
+      - ./secrets/nutrisnap-sa.json:/secrets/sa.json:ro
+
+  frontend:
+    build: ./frontend
+    container_name: ns_frontend
+    profiles:
+      - app
+    ports:
+      - '3000:3000'
+    environment:
+      API_BASE_URL: http://backend:8000
+
+  nutrisnap-preprocess:
+    build:
+      context: ./src
+      dockerfile: preprocess/Dockerfile
+    container_name: ns-preprocess
+    profiles:
+      - ml
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /secrets/sa.json
+    env_file:
+      - ./src/.env
+    volumes:
+      - shared-data:/app/data
+      - ./src/cache:/root/.cache
+      - ./secrets/nutrisnap-sa.json:/secrets/sa.json:ro
+    restart: "no"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  nutrisnap-training:
+    build:
+      context: ./src
+      dockerfile: train/Dockerfile
+    container_name: ns-train
+    profiles:
+      - ml
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /secrets/sa.json
+    env_file:
+      - ./src/.env
+    volumes:
+      - shared-data:/app/data
+      - ./src/output:/app/food101-vit-model
+      - ./src/cache:/root/.cache
+      - ./secrets/nutrisnap-sa.json:/secrets/sa.json:ro
+    restart: "no"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    tty: true
+    stdin_open: true
+
+volumes:
+  postgres_data:
+  shared-data:

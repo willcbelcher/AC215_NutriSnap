@@ -1,12 +1,16 @@
+import json
 import os
+import shutil
+import sys
+from pathlib import Path
+
 os.environ.setdefault("WANDB_SILENT", "true")
 os.environ.setdefault("FAST_DEV_RUN", "0")
 
 import numpy as np
-from PIL import Image
 
 import torch
-from datasets import load_dataset
+from datasets import load_from_disk
 from transformers import (
     AutoImageProcessor,
     AutoModelForImageClassification,
@@ -18,61 +22,60 @@ from transformers import (
 import evaluate
 import wandb
 
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
+from gcs_utils import get_gcs_fs, gcs_uri
+
 
 def main():
     set_seed(42)
-    print("Running train.py")
+    print("Running train/train.py")
 
     # -------------------------
-    # 0) Fast dev run toggles
+    # 1) Load processed data from shared volume
     # -------------------------
-    FAST_DEV_RUN = os.getenv("FAST_DEV_RUN", "1").lower() in {"1", "true", "yes"}
-    TRAIN_SAMPLES = int(os.getenv("TRAIN_SAMPLES", "200"))
-    EVAL_SAMPLES = int(os.getenv("EVAL_SAMPLES", "200"))
+    fs = get_gcs_fs()
+    train_uri = gcs_uri("train")
+    eval_uri = gcs_uri("eval")
+    metadata_uri = gcs_uri("metadata.json")
 
-    if FAST_DEV_RUN:
-        print("Fast dev run enabled")
-    else:
-        print("Full run enabled")
+    cache_root = Path(os.getenv("LOCAL_DATA_CACHE", "/tmp/nutrisnap-data"))
+    cache_root.mkdir(parents=True, exist_ok=True)
 
-    # -------------------------
-    # 1) Data & preprocessing
-    # -------------------------
-    ds = load_dataset("ethz/food101")
-    id2label = {i: c for i, c in enumerate(ds["train"].features["label"].names)}
-    label2id = {c: i for i, c in id2label.items()}
+    def _sync_split(remote_uri: str, split_name: str):
+        local_path = cache_root / split_name
+        if local_path.exists():
+            shutil.rmtree(local_path)
+        print(f"Syncing {remote_uri} -> {local_path}")
+        fs.get(remote_uri, str(local_path), recursive=True)
+        return load_from_disk(str(local_path))
 
-    # Small subsample for quick local test, or use the full splits
-    if FAST_DEV_RUN:
-        train_ds = ds["train"].shuffle(seed=42).select(range(min(TRAIN_SAMPLES, len(ds["train"]))))
-        eval_ds = ds["validation"].shuffle(seed=42).select(range(min(EVAL_SAMPLES, len(ds["validation"]))))
-    else:
-        train_ds = ds["train"]
-        eval_ds = ds["validation"]
+    print(f"Loading processed datasets from {gcs_uri()} ...")
+    train_ds = _sync_split(train_uri, "train")
+    eval_ds = _sync_split(eval_uri, "eval")
 
-    model_ckpt = "google/vit-base-patch16-224-in21k"
+    # Load metadata
+    with fs.open(metadata_uri, "r") as f:
+        metadata = json.load(f)
+    
+    id2label = {int(k): v for k, v in metadata["id2label"].items()}
+    label2id = {k: int(v) for k, v in metadata["label2id"].items()}
+    model_ckpt = metadata["model_ckpt"]
+    FAST_DEV_RUN = metadata["fast_dev_run"]
+    
+    print(f"Loaded {metadata['train_samples']} train and {metadata['eval_samples']} eval samples")
+
+    # Load processor and set dataset format for Trainer
     processor = AutoImageProcessor.from_pretrained(model_ckpt)
 
-    def transforms(examples):
-        # Ensure PIL RGB
-        images = []
-        for img in examples["image"]:
-            if hasattr(img, "convert"):
-                images.append(img.convert("RGB"))
-            else:
-                images.append(Image.open(img).convert("RGB"))
-
-        inputs = processor(images=images, return_tensors="pt")
-        inputs["labels"] = examples["label"]
-        return inputs
-
-    # Apply on-the-fly transforms
-    train_ds = train_ds.with_transform(transforms)
-    eval_ds = eval_ds.with_transform(transforms)
+    columns = ["pixel_values", "labels"]
+    train_ds.set_format(type="torch", columns=columns)
+    eval_ds.set_format(type="torch", columns=columns)
 
     # -------------------------
     # 2) Model
     # -------------------------
+    print("Loading model...")
     model = AutoModelForImageClassification.from_pretrained(
         model_ckpt,
         num_labels=len(id2label),
@@ -111,7 +114,7 @@ def main():
 
     # Light defaults for quick run; bump for full training
     args = TrainingArguments(
-        output_dir="./food101-vit",
+        output_dir="./output/food101-vit",
         per_device_train_batch_size=4,
         per_device_eval_batch_size=8,
         gradient_accumulation_steps=1,
@@ -123,16 +126,9 @@ def main():
         fp16=use_cuda,              # mixed precision on CUDA
         no_cuda=not use_cuda,       # False if CUDA, True otherwise
         dataloader_num_workers=0,   # adjust as needed
-        # removed: evaluation_strategy, save_strategy, report_to, run_name, use_mps_device, bf16
-        # evaluation_strategy="epoch",
-        # save_strategy="no",  # final save below via save_pretrained
-        # report_to=["wandb"], 
-        # run_name="vit-base-ft",
-        # use_mps_device=use_mps,     # Apple Silicon
-        # bf16=False,                 # enable if you have bf16 support
     )
 
-    # Data collator handles stacking of pixel_values/labels from transforms
+    # Data collator handles stacking of already processed pixel_values/labels
     data_collator = DefaultDataCollator()
 
     # -------------------------
@@ -153,6 +149,7 @@ def main():
     # -------------------------
     # 6) Train
     # -------------------------
+    print("Starting training...")
     trainer = Trainer(
         model=model,
         args=args,
@@ -168,6 +165,7 @@ def main():
     # -------------------------
     # 7) Final eval + save
     # -------------------------
+    print("Final evaluation...")
     metrics = trainer.evaluate()
     wandb.log(metrics)
 
@@ -185,6 +183,8 @@ def main():
     wandb.log_artifact(artifact)
     wandb.run.summary.update(metrics)
     wandb.finish()
+    
+    print("Training complete!")
 
 
 if __name__ == "__main__":

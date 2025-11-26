@@ -18,40 +18,17 @@
 								to="/log"
 								class="border-b-2 border-transparent text-gray-500 hover:border-green-500 hover:text-green-600 inline-flex items-center px-1 pt-1 text-sm font-medium"
 							>
-								Log Meal
+								Log Activity
 							</NuxtLink>
 						</div>
 					</div>
 
 					<div class="flex items-center">
-						<div class="ml-3 relative">
-							<button
-								class="flex items-center p-1 rounded-full bg-white text-gray-500 hover:text-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-							>
-								<span class="sr-only">Open user menu</span>
-								<img
-									class="h-8 w-8 rounded-full"
-									src="https://via.placeholder.com/150/059669/FFFFFF?text=P"
-									alt="Profile Avatar Placeholder"
-								/>
-								<span
-									class="ml-2 hidden lg:block text-sm font-medium text-gray-700"
-									>User Profile</span
-								>
-
-								<svg
-									class="ml-1 h-5 w-5"
-									xmlns="http://www.w3.org/2000/svg"
-									viewBox="0 0 20 20"
-									fill="currentColor"
-								>
-									<path
-										fill-rule="evenodd"
-										d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-										clip-rule="evenodd"
-									/>
-								</svg>
-							</button>
+						<div class="ml-3 relative flex items-center space-x-3">
+                            <div class="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-800 font-bold">
+                                U
+                            </div>
+                            <span class="hidden lg:block text-sm font-medium text-gray-700">User Profile</span>
 						</div>
 					</div>
 				</div>
