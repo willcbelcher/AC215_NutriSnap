@@ -2,10 +2,10 @@
 from fastapi import FastAPI, Depends, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-import requests
-import models, schemas, database
-from typing import List, Union
-from sqlalchemy import desc
+import models
+import schemas
+import database
+from typing import List
 from inference import predict as run_inference
 import os
 

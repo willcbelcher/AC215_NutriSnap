@@ -1,7 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from database import Base, SQLALCHEMY_DATABASE_URL
-from models import User, Meal, Symptom, Base
+from models import User, Meal, Symptom
 import os
 
 # 1. Setup the database connection

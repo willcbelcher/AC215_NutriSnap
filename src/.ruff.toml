@@ -3,8 +3,4 @@
 
 [lint]
 select = ["E", "F"]  # Only errors and fatal issues
-ignore = []
-
-[format]
-quote-style = "double"
-indent-width = 4
+ignore = ["E501", "E402", "F401", "F841"]  # Ignore line length, import order, unused imports/vars

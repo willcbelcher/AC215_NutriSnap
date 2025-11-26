@@ -105,6 +105,10 @@ jobs:
         working-directory: ./frontend
         run: npm install --force --ignore-scripts
 
+      - name: Prepare Nuxt (generate .nuxt directory)
+        working-directory: ./frontend
+        run: npx nuxt prepare
+
       - name: Run Vitest with coverage
         working-directory: ./frontend
         run: npm run test:coverage
@@ -139,17 +143,21 @@ jobs:
 
       - name: Lint backend (errors only)
         working-directory: ./backend
-        run: ruff check --select E,F --output-format=github .
+        run: ruff check --output-format=github .
         continue-on-error: false
 
       - name: Lint ML pipeline (errors only)
         working-directory: ./src
-        run: ruff check --select E,F --output-format=github .
+        run: ruff check --output-format=github .
         continue-on-error: false
 
       - name: Install frontend dependencies
         working-directory: ./frontend
         run: npm install --force --ignore-scripts
+
+      - name: Prepare Nuxt (generate .nuxt directory)
+        working-directory: ./frontend
+        run: npx nuxt prepare
 
       - name: Lint frontend (errors only)
         working-directory: ./frontend
