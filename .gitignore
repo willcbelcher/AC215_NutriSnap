@@ -35,6 +35,14 @@ coverage.xml
 .pytest_cache
 .hypothesis
 
+# Testing
+test.db
+*.db
+htmlcov/
+.pytest_cache/
+*.egg-info/
+coverage/
+
 # UV
 .venv/
 

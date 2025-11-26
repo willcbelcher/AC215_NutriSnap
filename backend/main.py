@@ -7,6 +7,7 @@ import models, schemas, database
 from typing import List, Union
 from sqlalchemy import desc
 from inference import predict as run_inference
+import os
 
 NUTRITION_LOOKUP = {
     "ramen": {"macros": {"protein": 10, "carbs": 40, "fat": 1}, "triggers": "None"},
@@ -18,8 +19,9 @@ NUTRITION_LOOKUP = {
 
 DEFAULT_MACROS = {"protein": 0, "carbs": 0, "fat": 0}
 
-# Create tables on startup
-models.Base.metadata.create_all(bind=database.engine)
+# Create tables on startup (skip during tests - conftest.py handles this)
+if os.getenv("TESTING") != "1":
+    models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI()
 

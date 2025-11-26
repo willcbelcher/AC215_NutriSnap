@@ -1,0 +1,10 @@
+# Ruff configuration for backend
+# Relaxed linting - errors only (E, F)
+
+[lint]
+select = ["E", "F"]  # Only errors and fatal issues
+ignore = []
+
+[format]
+quote-style = "double"
+indent-width = 4

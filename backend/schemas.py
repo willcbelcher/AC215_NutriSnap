@@ -14,11 +14,11 @@ class MealOut(BaseModel):
     fat: float
     triggers: Optional[str] = None
     created_at: datetime
+    user_id: int
     class Config:
         from_attributes = True
 
 class SymptomCreate(BaseModel):
-    user_id: int
     symptom_name: str
     severity: int
     notes: Optional[str] = None
@@ -29,5 +29,6 @@ class SymptomOut(BaseModel):
     severity: int
     notes: Optional[str] = None
     created_at: datetime
+    user_id: int
     class Config:
         from_attributes = True

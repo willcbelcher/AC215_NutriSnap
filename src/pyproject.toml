@@ -14,6 +14,21 @@ dependencies = [
     "accelerate>=0.20.0",
     "scikit-learn>=1.3.0",
     "gcsfs>=2024.3.1",
+    "pytest>=8.0.0",
+    "pytest-mock>=3.12.0",
+    "pytest-cov>=4.1.0",
 ]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["gcs_utils", "transforms"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["tests*"]
+exclude = ["train*", "preprocess*", "cache*", "output*"]
 
 [tool.uv]
