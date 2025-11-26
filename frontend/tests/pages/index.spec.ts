@@ -1,5 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, it, expect, vi } from 'vitest'
 import { ref } from 'vue'
 
 // Mock Nuxt composables
@@ -69,9 +68,6 @@ describe('Dashboard Page - Basic Tests', () => {
   it('should have dashboard title in template', async () => {
     // This test verifies the static content exists
     const { default: IndexPage } = await import('~/pages/index.vue')
-
-    // Check that the component template string contains expected text
-    const componentString = IndexPage.__file || IndexPage.toString()
 
     // Basic smoke test - component exists and can be imported
     expect(IndexPage).toBeDefined()

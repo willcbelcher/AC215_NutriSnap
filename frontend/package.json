@@ -9,13 +9,15 @@
         "preview": "nuxt preview",
         "postinstall": "nuxt prepare",
         "test": "vitest",
-        "test:coverage": "vitest --coverage"
+        "test:coverage": "vitest --coverage",
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix"
     },
     "dependencies": {
         "@nuxt/ui": "4.0.0",
         "@tailwindcss/vite": "^4.1.17",
-        "apexcharts": "^3.45.0",
-        "vue3-apexcharts": "^1.4.1",
+        "apexcharts": "^4.2.0",
+        "vue3-apexcharts": "^1.6.0",
         "dotenv": "^17.2.3",
         "nuxt": "^4.1.2",
         "pg": "^8.16.3",
@@ -32,6 +34,9 @@
         "@vue/test-utils": "^2.4.0",
         "@vitest/coverage-v8": "^2.0.0",
         "autoprefixer": "^10.4.22",
+        "eslint": "^8.57.0",
+        "@typescript-eslint/eslint-plugin": "^7.0.0",
+        "@typescript-eslint/parser": "^7.0.0",
         "happy-dom": "^15.0.0",
         "vitest": "^2.0.0"
     }

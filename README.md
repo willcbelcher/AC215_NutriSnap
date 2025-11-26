@@ -189,7 +189,7 @@ GitHub Actions automatically runs tests on every push and pull request to `main`
 - **Backend Tests**: Runs pytest with PostgreSQL service container, generates coverage reports
 - **ML Tests**: Tests GCS utilities and data processing functions
 - **Frontend Tests**: Runs Vitest component tests with coverage
-- **Linting**: Checks Python code with Ruff (errors only, relaxed mode)
+- **Linting**: Checks Python code with Ruff and TypeScript/Vue with ESLint (errors only, relaxed mode)
 
 **Viewing Results:**
 - CI status: Check the Actions tab in the GitHub repository
