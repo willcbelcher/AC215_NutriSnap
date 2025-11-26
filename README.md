@@ -133,8 +133,8 @@ Milestone 4 covers application development prior to cloud deployment.
 1. Application Design Document - located in the `docs/` folder.
 2. API and Frontend - there are associated frontend and backend folders. The application can be started via commands below.
 3. CI and Testing - Automated testing and CI/CD pipeline implemented (see Testing section below).
-4. Data versioning and reproducibility: PB to do
-5. PB TODO
+4. Data versioning and reproducibility: located in the application design document in the `docs/` folder.
+5. Model Training/Fine-Tuning: located in the application design document in the `docs/` folder.
 
 To run the application, after cloning, simply run:
 
