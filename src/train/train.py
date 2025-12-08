@@ -169,9 +169,24 @@ def main():
     metrics = trainer.evaluate()
     wandb.log(metrics)
 
+    # Validation Gate
+    min_accuracy = float(os.getenv("MIN_ACCURACY", "0.7"))
+    eval_acc = metrics.get("eval_top1", 0.0)
+    print(f"Validation: Accuracy={eval_acc:.4f}, Threshold={min_accuracy}")
+    
+    if eval_acc < min_accuracy:
+        raise ValueError(f"Model accuracy {eval_acc:.4f} is below threshold {min_accuracy}. Deployment aborted.")
+
     save_dir = "./food101-vit-model"
     model.save_pretrained(save_dir)
     processor.save_pretrained(save_dir)
+
+    # Automated Deployment to GCS
+    model_gcs_uri = os.getenv("MODEL_GCS_URI")
+    if model_gcs_uri:
+        print(f"Deploying model to {model_gcs_uri}...")
+        fs.put(save_dir, model_gcs_uri, recursive=True)
+        print(f"Model deployed to {model_gcs_uri}")
 
     artifact = wandb.Artifact(
         name="food101-vit-model",

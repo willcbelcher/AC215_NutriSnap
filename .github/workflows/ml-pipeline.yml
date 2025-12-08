@@ -1,0 +1,60 @@
+name: ML Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+  workflow_dispatch:
+
+jobs:
+  build-train-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      working-directory: src
+      run: |
+        python -m pip install --upgrade pip
+        pip install .
+
+    - name: Run Preprocessing
+      working-directory: src
+      env:
+        GCS_PROJECT: ${{ secrets.GCS_PROJECT }}
+        GCS_BUCKET: ${{ vars.GCS_BUCKET }}
+        GCS_DATA_VERSION: ${{ vars.GCS_DATA_VERSION }}
+        FAST_DEV_RUN: 0
+      run: python preprocess/preprocess.py
+
+    - name: Run Training & Deployment
+      working-directory: src
+      env:
+        GCS_PROJECT: ${{ secrets.GCS_PROJECT }}
+        GCS_BUCKET: ${{ vars.GCS_BUCKET }}
+        GCS_DATA_VERSION: ${{ vars.GCS_DATA_VERSION }}
+        WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
+        MODEL_GCS_URI: ${{ vars.MODEL_GCS_URI }}
+        FAST_DEV_RUN: 0
+        MIN_ACCURACY: 0.7
+      run: python train/train.py
+
+
+
