@@ -3,9 +3,8 @@ name: ML Pipeline
 on:
   push:
     branches: [ "main", "prakrit/ml_git_workflow" ]
-    paths-ignore:
-      - 'docs/**'
-      - '**.md'
+    paths:
+      - 'src/train/train.py'
   workflow_dispatch:
 
 jobs:
