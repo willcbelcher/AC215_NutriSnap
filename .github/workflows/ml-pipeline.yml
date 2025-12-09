@@ -2,7 +2,7 @@ name: ML Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "prakrit/ml_git_workflow" ]
     paths-ignore:
       - 'docs/**'
       - '**.md'
