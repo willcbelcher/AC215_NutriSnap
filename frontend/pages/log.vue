@@ -41,7 +41,7 @@
       <div class="px-4 py-5 sm:p-6">
         <h3 class="text-base font-semibold leading-6 text-gray-900">Upload Meal Photo</h3>
         <div class="mt-2 max-w-xl text-sm text-gray-500">
-          <p>Upload a photo of your meal. Our AI will analyze it for macros and potential triggers.</p>
+          <p>Upload a photo of your meal. Our AI will analyze it for potential triggers.</p>
         </div>
         
         <div class="mt-5">
@@ -67,11 +67,6 @@
             <h4 class="text-lg font-bold text-gray-900">Analysis Result</h4>
             <div class="mt-2 bg-green-50 p-4 rounded-md">
                 <p class="font-medium text-green-800">Detected: {{ loggedMeal.identified_foods }}</p>
-                <div class="mt-2 flex space-x-4 text-sm text-green-700">
-                    <span>Protein: {{ loggedMeal.protein }}g</span>
-                    <span>Carbs: {{ loggedMeal.carbs }}g</span>
-                    <span>Fat: {{ loggedMeal.fat }}g</span>
-                </div>
                 <div v-if="loggedMeal.triggers && loggedMeal.triggers !== 'None'" class="mt-2 text-red-600 text-sm font-bold">
                     ⚠️ Potential Triggers: {{ loggedMeal.triggers }}
                 </div>

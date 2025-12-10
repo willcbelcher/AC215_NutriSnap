@@ -1,6 +1,7 @@
 from database import engine, SessionLocal, Base
 import models
 from datetime import datetime, timedelta
+import random
 
 def reset_and_seed_example():
     print("⚠️  Wiping database...")
@@ -9,7 +10,7 @@ def reset_and_seed_example():
     
     db = SessionLocal()
     try:
-        print("🌱 Seeding example data...")
+        print("🌱 Seeding comprehensive example data...")
         
         # Create User
         user = models.User(email="demo@test.com", name="Demo User")
@@ -17,44 +18,62 @@ def reset_and_seed_example():
         db.commit()
         db.refresh(user)
         
-        # Base time: 3 days ago
-        base_time = datetime.now() - timedelta(days=3)
+        # Base time: 5 days ago
+        base_time = datetime.now() - timedelta(days=5)
         
         # Data Patterns:
         # Lactose -> Bloating
         # Gluten -> Lethargy
+        # Spicy Food -> Heartburn
         
         meals_data = [
             # Day 1
-            {"food": "Grilled Chicken Salad", "triggers": "None", "offset_hours": 0}, # Lunch
-            {"food": "Cheese Pizza", "triggers": "Lactose, Gluten", "offset_hours": 6}, # Dinner
+            {"food": "Greek Yogurt Parfait", "triggers": "Lactose", "offset_hours": 8}, # Breakfast
+            {"food": "Grilled Chicken Salad", "triggers": "None", "offset_hours": 13}, # Lunch
+            {"food": "Pepperoni Pizza", "triggers": "Gluten, Lactose, High Sodium", "offset_hours": 19}, # Dinner
             
             # Day 2
-            {"food": "Oatmeal With Berries", "triggers": "None", "offset_hours": 24}, # Breakfast
-            {"food": "Turkey Sandwich", "triggers": "Gluten", "offset_hours": 29}, # Lunch
-            {"food": "Ice Cream", "triggers": "Lactose, Sugar", "offset_hours": 34}, # Snack
+            {"food": "Scrambled Eggs & Avocado", "triggers": "None", "offset_hours": 32}, # Breakfast
+            {"food": "Turkey Sandwich on Wheat", "triggers": "Gluten", "offset_hours": 37}, # Lunch
+            {"food": "Spicy Beef Tacos", "triggers": "Spicy Food, Gluten", "offset_hours": 43}, # Dinner
             
             # Day 3
-            {"food": "Greek Yogurt", "triggers": "Lactose", "offset_hours": 48}, # Breakfast
-            {"food": "Pasta Carbonara", "triggers": "Gluten, Lactose", "offset_hours": 54}, # Dinner
+            {"food": "Oatmeal with Berries", "triggers": "None", "offset_hours": 56}, # Breakfast
+            {"food": "Pasta Carbonara", "triggers": "Gluten, Lactose", "offset_hours": 61}, # Lunch
+            {"food": "Chocolate Ice Cream", "triggers": "Lactose, Sugar", "offset_hours": 67}, # Snack
+            {"food": "Grilled Salmon with Rice", "triggers": "None", "offset_hours": 70}, # Dinner
+            
+            # Day 4
+            {"food": "Green Smoothie", "triggers": "None", "offset_hours": 80}, # Breakfast
+            {"food": "Chicken Curry", "triggers": "Spicy Food", "offset_hours": 85}, # Lunch
+            {"food": "Cheeseburger", "triggers": "Gluten, Lactose, Red Meat", "offset_hours": 91}, # Dinner
+            
+            # Day 5 (Today)
+            {"food": "Cereal with Whole Milk", "triggers": "Lactose, Gluten", "offset_hours": 104}, # Breakfast
+            {"food": "Sushi Roll", "triggers": "None", "offset_hours": 109}, # Lunch
         ]
         
         symptoms_data = [
-            # Day 1: Bloating after Pizza
-            {"name": "Bloating", "severity": 7, "offset_hours": 8}, # 2 hours after Pizza
+            # Day 1
+            {"name": "Bloating", "severity": 4, "notes": "Felt bloated immediately after breakfast.", "offset_hours": 9},
+            {"name": "Bloating", "severity": 7, "notes": "Stomach feels very tight and uncomfortable.", "offset_hours": 21},
+            {"name": "Lethargy", "severity": 6, "notes": "Feeling super tired, hard to keep eyes open.", "offset_hours": 21},
             
-            # Day 2: Lethargy after Sandwich
-            {"name": "Lethargy", "severity": 5, "offset_hours": 31}, # 2 hours after Sandwich
+            # Day 2
+            {"name": "Lethargy", "severity": 5, "notes": "Brain fog hitting hard at work.", "offset_hours": 39},
+            {"name": "Heartburn", "severity": 6, "notes": "Burning sensation in chest after tacos.", "offset_hours": 44},
             
-            # Day 2: Bloating after Ice Cream
-            {"name": "Bloating", "severity": 6, "offset_hours": 35}, # 1 hour after Ice Cream
+            # Day 3
+            {"name": "Lethargy", "severity": 7, "notes": "Need a nap right after lunch.", "offset_hours": 63},
+            {"name": "Bloating", "severity": 5, "notes": "Stomach rumbling.", "offset_hours": 68},
             
-            # Day 3: Bloating after Yogurt
-            {"name": "Bloating", "severity": 4, "offset_hours": 49}, # 1 hour after Yogurt
+            # Day 4
+            {"name": "Heartburn", "severity": 5, "notes": "Mild acid reflux.", "offset_hours": 87},
+            {"name": "Bloating", "severity": 6, "notes": "Feeling heavy and bloated.", "offset_hours": 93},
+            {"name": "Lethargy", "severity": 4, "notes": "Food coma.", "offset_hours": 93},
             
-            # Day 3: Lethargy/Bloating after Pasta
-            {"name": "Bloating", "severity": 8, "offset_hours": 56}, # 2 hours after Pasta
-            {"name": "Lethargy", "severity": 6, "offset_hours": 56},
+            # Day 5
+            {"name": "Bloating", "severity": 5, "notes": "Gas pain after cereal.", "offset_hours": 105},
         ]
         
         # Insert Meals
@@ -74,13 +93,14 @@ def reset_and_seed_example():
                 user_id=user.id,
                 symptom_name=s["name"],
                 severity=s["severity"],
-                notes="Generated example data",
+                notes=s["notes"],
                 created_at=base_time + timedelta(hours=s["offset_hours"])
             )
             db.add(symptom)
             
         db.commit()
-        print("✅ Example data seeded! Triggers 'Lactose' and 'Gluten' should be prominent.")
+        print("✅ Comprehensive example data seeded!")
+        print("Expected Top Triggers: Lactose, Gluten, Spicy Food")
         
     except Exception as e:
         print(f"❌ Error seeding data: {e}")

@@ -145,7 +145,6 @@
 </template>
 
 <script setup>
-import VueApexCharts from 'vue3-apexcharts';
 
 // 1. Fetch data from backend
 const config = useRuntimeConfig();
