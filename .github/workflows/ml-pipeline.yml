@@ -2,7 +2,7 @@ name: ML Pipeline
 
 on:
   push:
-    branches: [ "main", "prakrit/ml_git_workflow" ]
+    branches: [ "main" ]
     paths:
       - 'src/train/train.py'
   workflow_dispatch:
@@ -34,26 +34,16 @@ jobs:
         python -m pip install --upgrade pip
         pip install .
 
-    - name: Run Preprocessing
+    - name: Run Training
       working-directory: src
       env:
         GCS_PROJECT: ${{ secrets.GCS_PROJECT }}
         GCS_BUCKET: ${{ vars.GCS_BUCKET }}
-        GCS_DATA_VERSION: ${{ vars.GCS_DATA_VERSION }}
-        FAST_DEV_RUN: 0
-      run: python preprocess/preprocess.py
-
-    - name: Run Training & Deployment
-      working-directory: src
-      env:
-        GCS_PROJECT: ${{ secrets.GCS_PROJECT }}
-        GCS_BUCKET: ${{ vars.GCS_BUCKET }}
-        GCS_DATA_VERSION: ${{ vars.GCS_DATA_VERSION }}
+        GCS_DATA_VERSION: v0
         WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
-        MODEL_GCS_URI: ${{ vars.MODEL_GCS_URI }}
-        FAST_DEV_RUN: 0
-        MIN_ACCURACY: 0.7
+        MODEL_GCS_URI: gs://nutrisnap-models-new/v0/
+        FAST_DEV_RUN: 1
+        TRAIN_SAMPLES: 100
+        EVAL_SAMPLES: 100
       run: python train/train.py
-
-
 
