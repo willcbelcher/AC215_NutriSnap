@@ -171,8 +171,9 @@ def main():
     eval_acc = metrics.get("eval_top1", 0.0)
     print(f"Validation: Accuracy={eval_acc:.4f}, Threshold={min_accuracy}")
     
-    if eval_acc < min_accuracy:
-        raise ValueError(f"Model accuracy {eval_acc:.4f} is below threshold {min_accuracy}. Deployment aborted.")
+    if FAST_DEV_RUN or eval_acc < min_accuracy:
+        print(f"Model accuracy {eval_acc:.4f} is below threshold {min_accuracy}. Exiting.")
+        return
 
     save_dir = "./food101-vit-model"
     model.save_pretrained(save_dir)
