@@ -9,9 +9,6 @@ class MealCreate(BaseModel):
 class MealOut(BaseModel):
     id: int
     identified_foods: str
-    protein: float
-    carbs: float
-    fat: float
     triggers: Optional[str] = None
     created_at: datetime
     user_id: int

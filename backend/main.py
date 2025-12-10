@@ -8,16 +8,15 @@ import database
 from typing import List
 from inference import predict as run_inference
 import os
+import httpx
+import gemini_utils
+import logging
+from datetime import timedelta
 
-NUTRITION_LOOKUP = {
-    "ramen": {"macros": {"protein": 10, "carbs": 40, "fat": 1}, "triggers": "None"},
-    "grilled_salmon": {"macros": {"protein": 34, "carbs": 0, "fat": 14}, "triggers": "None"},
-    "cheeseburger": {"macros": {"protein": 28, "carbs": 33, "fat": 32}, "triggers": "Gluten, Lactose"},
-    "oatmeal": {"macros": {"protein": 6, "carbs": 27, "fat": 3}, "triggers": "None"},
-    "spaghetti_bolognese": {"macros": {"protein": 22, "carbs": 63, "fat": 17}, "triggers": "Gluten"},
-}
+logger = logging.getLogger(__name__)
 
-DEFAULT_MACROS = {"protein": 0, "carbs": 0, "fat": 0}
+MODEL_SERVICE_URL = os.getenv("MODEL_SERVICE_URL")
+
 
 # Create tables on startup (skip during tests - conftest.py handles this)
 if os.getenv("TESTING") != "1":
@@ -76,9 +75,40 @@ def get_recent_activity(db: Session = Depends(database.get_db)):
 
 @app.get("/dashboard/triggers")
 def get_triggers(db: Session = Depends(database.get_db)):
-    # Simple mock analysis for prototype
-    # In a real app, this would correlate meals with symptoms
-    return ["Lactose", "Gluten", "Spicy Food"]
+    user_id = 1 # Hardcoded for prototype
+    
+    # 1. Get all symptoms
+    symptoms = db.query(models.Symptom).filter(models.Symptom.user_id == user_id).all()
+    
+    # Require at least a few symptoms to make a guess
+    if len(symptoms) < 3:
+        return []
+        
+    trigger_counts = {}
+    
+    for symptom in symptoms:
+        # Find meals eaten within 6 hours BEFORE the symptom
+        window_start = symptom.created_at - timedelta(hours=6)
+        
+        meals = db.query(models.Meal).filter(
+            models.Meal.user_id == user_id,
+            models.Meal.created_at >= window_start,
+            models.Meal.created_at <= symptom.created_at
+        ).all()
+        
+        for meal in meals:
+            if meal.triggers and meal.triggers != "None":
+                # Split by comma and clean up
+                parts = [t.strip() for t in meal.triggers.split(",")]
+                for part in parts:
+                    if part and part.lower() != "none":
+                        trigger_counts[part] = trigger_counts.get(part, 0) + 1
+                        
+    # Sort by frequency
+    sorted_triggers = sorted(trigger_counts.items(), key=lambda x: x[1], reverse=True)
+    
+    # Return top 3 most frequent triggers
+    return [t[0] for t in sorted_triggers[:3]]
 
 @app.post("/log/food", response_model=schemas.MealOut)
 async def log_food(file: UploadFile = File(...), db: Session = Depends(database.get_db)):
@@ -86,21 +116,104 @@ async def log_food(file: UploadFile = File(...), db: Session = Depends(database.
     if not image_bytes:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
-    try:
-        predictions = run_inference(image_bytes)
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Inference failed: {exc}") from exc
+    # Vertex AI Configuration
+    vertex_endpoint_id = os.getenv("VERTEX_ENDPOINT_ID")
+    vertex_project_id = os.getenv("VERTEX_PROJECT_ID")
+    vertex_region = os.getenv("VERTEX_REGION", "us-central1")
+
+    predictions = {}
+    if vertex_endpoint_id:
+        try:
+            # Get credentials
+            import google.auth
+            from google.auth.transport.requests import Request as GoogleRequest
+            
+            credentials, _ = google.auth.default()
+            credentials.refresh(GoogleRequest())
+            token = credentials.token
+            
+            # Encode image
+            import base64
+            encoded_image = base64.b64encode(image_bytes).decode("utf-8")
+            
+            # Prepare request
+            # The endpoint_id might be the full resource name or just the ID. 
+            # If it's the full path, we can extract the ID or use it directly if the URL construction handles it.
+            # The user provided full path: projects/.../endpoints/...
+            # API expects: https://{REGION}-aiplatform.googleapis.com/v1/{ENDPOINT}:predict
+            
+            # If the user passed the full path, we can use it directly in the URL if we format correctly.
+            # But usually the library or API expects the resource name.
+            
+            # Check if VERTEX_ENDPOINT_ID is already a full path
+            if "projects/" in vertex_endpoint_id:
+                 url = f"https://{vertex_region}-aiplatform.googleapis.com/v1/{vertex_endpoint_id}:predict"
+            else:
+                 url = f"https://{vertex_region}-aiplatform.googleapis.com/v1/projects/{vertex_project_id}/locations/{vertex_region}/endpoints/{vertex_endpoint_id}:predict"
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    url,
+                    json={"instances": [encoded_image]}, # Custom model expects list of strings
+                    headers={
+                        "Authorization": f"Bearer {token}",
+                        "Content-Type": "application/json"
+                    },
+                    timeout=30.0
+                )
+                response.raise_for_status()
+                result = response.json()
+                
+                # Adapt response. Vertex AI returns {"predictions": [...]}
+                # Our model returns {"top1": ..., "topk": ...} inside the prediction
+                if result.get("predictions"):
+                    # The prediction list usually contains the output of the model.
+                    # Assuming our model output structure is preserved.
+                    predictions = result["predictions"][0]
+
+        except Exception as exc:
+            logger.error(f"Vertex AI inference failed: {exc}")
+            raise HTTPException(status_code=500, detail=f"Vertex AI inference failed: {exc}")
+    elif MODEL_SERVICE_URL:
+         # Keep legacy internal call just in case, or remove it?
+         # User said "leave the model outside of kubernetes", so we can probably remove or deprecate.
+         # I'll leave it as a fallback if VERTEX_ENDPOINT_ID is not set.
+        try:
+            # Encode image to base64 for the Vertex/Model service
+            import base64
+            encoded_image = base64.b64encode(image_bytes).decode("utf-8")
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{MODEL_SERVICE_URL}/predict",
+                    json={"instances": [encoded_image]},
+                    timeout=30.0
+                )
+                response.raise_for_status()
+                result = response.json()
+                if result.get("predictions"):
+                    predictions = result["predictions"][0]
+        except Exception as exc:
+            logger.error(f"Model service failed: {exc}")
+            raise HTTPException(status_code=500, detail=f"Model service failed: {exc}")
+    else:
+        # Fallback to local inference
+        try:
+            predictions = run_inference(image_bytes)
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Inference failed: {exc}") from exc
 
     if not predictions.get("top1"):
         raise HTTPException(status_code=500, detail="Model returned no predictions.")
 
     top_label = predictions["top1"][0]["label"]
-    label_key = top_label.replace(" ", "_").lower()
-    nutrition = NUTRITION_LOOKUP.get(label_key, {})
-    macros = nutrition.get("macros", DEFAULT_MACROS)
-    triggers = nutrition.get("triggers")
-    identified_foods = ", ".join([pred["label"] for pred in predictions.get("topk", [])]) or top_label
-
+    # Format label: replace underscores with spaces and title case
+    formatted_label = top_label.replace("_", " ").title()
+    identified_foods = formatted_label
+    
+    # Get triggers from Gemini
+    triggers = gemini_utils.get_food_triggers(formatted_label, image_bytes)
+    
     # Ensure user exists
     user = db.query(models.User).filter(models.User.id == 1).first()
     if not user:
@@ -111,9 +224,6 @@ async def log_food(file: UploadFile = File(...), db: Session = Depends(database.
     new_meal = models.Meal(
         image_url="https://via.placeholder.com/150?text=Food", # Placeholder since we aren't storing the file
         identified_foods=identified_foods,
-        protein=macros["protein"],
-        carbs=macros["carbs"],
-        fat=macros["fat"],
         triggers=triggers,
         user_id=1
     )

@@ -27,13 +27,18 @@
 						Symptom Severity Trend
 					</p>
                     <ClientOnly>
-                        <apexchart
-                            width="100%"
-                            height="300"
-                            type="area"
-                            :options="chartOptions"
-                            :series="chartSeries"
-                        ></apexchart>
+                        <div v-if="chartSeries.length > 0 && chartSeries[0].data.length > 1">
+                            <apexchart
+                                width="100%"
+                                height="300"
+                                type="area"
+                                :options="chartOptions"
+                                :series="chartSeries"
+                            ></apexchart>
+                        </div>
+                        <div v-else class="flex items-center justify-center h-64 text-gray-500 text-center p-4">
+                            <p>We need more data to give you your symptom severity chart!</p>
+                        </div>
                     </ClientOnly>
 				</div>
 
@@ -43,7 +48,7 @@
 						Potential Triggers Analysis
 					</p>
 					<div class="mt-1">
-                        <span v-if="!triggers || triggers.length === 0" class="text-gray-500 text-sm">No triggers detected yet. Keep logging!</span>
+                        <span v-if="!triggers || triggers.length === 0" class="text-gray-500 text-sm">Not enough data to identify triggers.</span>
                         <div v-else class="space-y-4">
                             <div v-for="trigger in triggers" :key="trigger" class="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-100">
                                 <div class="flex items-center">
@@ -80,9 +85,7 @@
                                         {{ new Date(meal.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) }}
                                     </p>
                                     <div class="mt-2 flex items-center text-xs text-gray-600 space-x-3">
-                                        <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Prot: {{ meal.protein }}g</span>
-                                        <span class="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">Carbs: {{ meal.carbs }}g</span>
-                                        <span class="bg-orange-100 text-orange-800 px-2 py-0.5 rounded">Fat: {{ meal.fat }}g</span>
+                                        <!-- Macros removed -->
                                     </div>
                                 </div>
                                 <div v-if="meal.triggers && meal.triggers !== 'None' && meal.triggers !== 'None detected'">
@@ -150,17 +153,20 @@ const apiBase = import.meta.server ? config.apiBase : config.public.apiBase;
 
 const { data: triggers } = await useFetch('/dashboard/triggers', {
     baseURL: apiBase,
-    default: () => []
+    default: () => [],
+    server: false
 });
 
 const { data: allMeals } = await useFetch('/dashboard', {
     baseURL: apiBase,
-    default: () => []
+    default: () => [],
+    server: false
 });
 
 const { data: allSymptoms } = await useFetch('/dashboard/symptoms', {
     baseURL: apiBase,
-    default: () => []
+    default: () => [],
+    server: false
 });
 
 // 2. Computed Properties for logic

@@ -1,0 +1,6 @@
+name: nutrisnap-infra
+runtime:
+  name: python
+  options:
+    virtualenv: venv
+description: NutriSnap GKE Infrastructure

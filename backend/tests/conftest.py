@@ -49,6 +49,12 @@ def client(test_db, monkeypatch):
         }
 
     monkeypatch.setattr("main.run_inference", mock_predict)
+    
+    # Mock Gemini
+    def mock_get_triggers(food_label, image_bytes):
+        return "Gluten, Soy"
+    
+    monkeypatch.setattr("gemini_utils.get_food_triggers", mock_get_triggers)
     app.dependency_overrides[database.get_db] = override_get_db
 
     with TestClient(app) as c:

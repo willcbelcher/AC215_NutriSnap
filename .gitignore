@@ -72,6 +72,6 @@ food101-vit-model/
 food101-vit/
 
 # Documentation
-README.md
-*.md
 !docs/application_design.md
+infra/kubeconfig.yaml
+infra/Pulumi.dev.yaml
