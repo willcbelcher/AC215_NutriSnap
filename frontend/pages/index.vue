@@ -1,7 +1,7 @@
 <template>
 	<div class="space-y-6">
 		<div class="flex justify-between items-center">
-			<h1 class="text-3xl font-extrabold text-gray-900">Health Dashboard</h1>
+			<h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900">Health Dashboard</h1>
 			<button
 				@click="refresh"
 				class="text-sm text-green-600 hover:text-green-800 font-medium"

@@ -10,14 +10,14 @@
 
     <!-- Tabs -->
     <div class="border-b border-gray-200">
-      <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+      <nav class="-mb-px flex sm:space-x-8" aria-label="Tabs">
         <button
           @click="activeTab = 'food'"
           :class="[
             activeTab === 'food'
               ? 'border-green-500 text-green-600'
               : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
-            'whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium',
+            'whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium w-1/2 sm:w-auto text-center',
           ]"
         >
           Log Food
@@ -28,7 +28,7 @@
             activeTab === 'symptom'
               ? 'border-red-500 text-red-600'
               : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
-            'whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium',
+            'whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium w-1/2 sm:w-auto text-center',
           ]"
         >
           Log Symptom

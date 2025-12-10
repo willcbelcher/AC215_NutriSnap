@@ -116,6 +116,28 @@ async def log_food(file: UploadFile = File(...), db: Session = Depends(database.
     if not image_bytes:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
+    # Resize image to reduce payload size (Vertex AI limit ~1.5MB)
+    from PIL import Image
+    import io
+    
+    try:
+        image = Image.open(io.BytesIO(image_bytes))
+        # Convert to RGB (handle PNG/RGBA)
+        if image.mode != "RGB":
+            image = image.convert("RGB")
+            
+        # Resize to max 512x512 (ViT usually takes 224x224, but 512 is safe for quality)
+        image.thumbnail((512, 512))
+        
+        # Save to buffer as JPEG
+        buffered = io.BytesIO()
+        image.save(buffered, format="JPEG", quality=85)
+        resized_bytes = buffered.getvalue()
+    except Exception as e:
+        logger.error(f"Image processing failed: {e}")
+        # Fallback to original if resize fails (unlikely)
+        resized_bytes = image_bytes
+
     # Vertex AI Configuration
     vertex_endpoint_id = os.getenv("VERTEX_ENDPOINT_ID")
     vertex_project_id = os.getenv("VERTEX_PROJECT_ID")
@@ -134,7 +156,7 @@ async def log_food(file: UploadFile = File(...), db: Session = Depends(database.
             
             # Encode image
             import base64
-            encoded_image = base64.b64encode(image_bytes).decode("utf-8")
+            encoded_image = base64.b64encode(resized_bytes).decode("utf-8")
             
             # Prepare request
             # The endpoint_id might be the full resource name or just the ID. 
@@ -212,7 +234,7 @@ async def log_food(file: UploadFile = File(...), db: Session = Depends(database.
     identified_foods = formatted_label
     
     # Get triggers from Gemini
-    triggers = gemini_utils.get_food_triggers(formatted_label, image_bytes)
+    triggers = gemini_utils.get_food_triggers(formatted_label, resized_bytes)
     
     # Ensure user exists
     user = db.query(models.User).filter(models.User.id == 1).first()
