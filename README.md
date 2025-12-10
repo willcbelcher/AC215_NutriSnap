@@ -1,4 +1,4 @@
-# AC215 - Milestone2 - NutriSnap
+# AC215 - NutriSnap
 
 **Team Members**
 William Belcher, Prakrit Baruah, Vineet Jammalamadaka
@@ -145,6 +145,33 @@ docker compose --profile app exec ns_backend python seed.py # Seeds the database
 
 The frontend can then be accessed via http://localhost:3000
 
+## Milestone 5
+
+Milestone 5 covers application final cloud deployment.
+
+### Kubernetes Deployment
+TODO: William Belcher. 
+Cover:
+- Kubernetes
+   - Deploy the application to a Kubernetes cluster.
+   - Demonstrate basic scaling behavior by varying the load and showing how the cluster responds (e.g., scaling replicas/pods).
+- Pulumi Infrastructure Code:
+   - Use Pulumi to automate the provisioning and deployment of your infrastructure (e.g., Kubernetes cluster, networking, storage,configurations, etc.) and application.
+
+### CI/CD Pipeline Implementation 
+TODO: William Belcher
+Cover:
+- Have a unit test suite for each service/container.
+- Run integration tests on the code base .
+- Deploy updates to the Kubernetes cluster upon merging changes into the main branch.
+- Achieve at least 60% line coverage. Document which functions and modules are not covered by tests.
+
+### ML Workflow: Automated Model retraining & GCP deployment workflow
+- Trigger: pushes to `main` that touch `src/train/train.py`, or manual `workflow_dispatch` from the Actions tab (`ML Pipeline` workflow).
+- Purpose: smoke-check that training still runs after script changes and optionally publish the refreshed model to GCS.
+- See `.github/workflows/ml-pipeline.yml`:
+  - The training script gates on `MIN_ACCURACY` (default 0.7). When `FAST_DEV_RUN` is off and accuracy passes the threshold, it saves the model and uploads it to `MODEL_GCS_URI` so the backend can consume the new version.
+
 ## Testing
 
 NutriSnap includes comprehensive automated testing across all components to ensure code quality and reliability.
@@ -242,30 +269,3 @@ frontend/tests/
    export MODEL_GCS_URI=gs://nutrisnap-models-new/v1
    docker compose --profile app up -d --build backend
    ```
-
-## Milestone 5
-
-Milestone 5 covers application final cloud deployment.
-
-### Kubernetes Deployment
-TODO: William Belcher. 
-Cover:
-- Kubernetes
-   - Deploy the application to a Kubernetes cluster.
-   - Demonstrate basic scaling behavior by varying the load and showing how the cluster responds (e.g., scaling replicas/pods).
-- Pulumi Infrastructure Code:
-   - Use Pulumi to automate the provisioning and deployment of your infrastructure (e.g., Kubernetes cluster, networking, storage,configurations, etc.) and application.
-
-### CI/CD Pipeline Implementation 
-TODO: William Belcher
-Cover:
-- Have a unit test suite for each service/container.
-- Run integration tests on the code base .
-- Deploy updates to the Kubernetes cluster upon merging changes into the main branch.
-- Achieve at least 60% line coverage. Document which functions and modules are not covered by tests.
-
-### ML Workflow: Automated Model retraining & GCP deployment workflow
-- Trigger: pushes to `main` that touch `src/train/train.py`, or manual `workflow_dispatch` from the Actions tab (`ML Pipeline` workflow).
-- Purpose: smoke-check that training still runs after script changes and optionally publish the refreshed model to GCS.
-- See `.github/workflows/ml-pipeline.yml`:
-  - The training script gates on `MIN_ACCURACY` (default 0.7). When `FAST_DEV_RUN` is off and accuracy passes the threshold, it saves the model and uploads it to `MODEL_GCS_URI` so the backend can consume the new version.
