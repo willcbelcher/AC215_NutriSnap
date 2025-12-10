@@ -56,8 +56,8 @@ All processed artifacts are written to Google Cloud Storage so we can track vers
 
 Environment overrides:
 
-- `GCS_PROJECT` (default `ac215-471519`)
-- `GCS_BUCKET` (default `nutrisnap-data`)
+- `GCS_PROJECT` (default `nutrisnap-473915`)
+- `GCS_BUCKET` (default `nutrisnap-data-new`)
 - `GCS_DATA_VERSION` (default `v1`)
 
 1. **`src/preprocess/preprocess.py`**  
@@ -78,7 +78,7 @@ Environment overrides:
    ```
 2. (Optional) point to a different bucket/version:
    ```bash
-   export GCS_BUCKET=nutrisnap-data
+   export GCS_BUCKET=nutrisnap-data-new
    export GCS_DATA_VERSION=v1
 
    ```
@@ -100,11 +100,11 @@ To serve the latest fine-tuned ViT from the app backend:
    ```bash
    export MODEL_DIR=./food101-vit-model
    export MODEL_VERSION=v1
-   gsutil -m rsync -r "${MODEL_DIR}" "gs://nutrisnap-models/${MODEL_VERSION}"
+   gsutil -m rsync -r "${MODEL_DIR}" "gs://nutrisnap-models-new/${MODEL_VERSION}"
    ```
 3. Point the backend to that folder via environment variables:
    ```bash
-   export MODEL_GCS_URI="gs://nutrisnap-models/${MODEL_VERSION}"
+   export MODEL_GCS_URI="gs://nutrisnap-models-new/${MODEL_VERSION}"
    # Optional: set when the exported folder lacks tokenizer/preprocessor files
    export MODEL_BASE_PROCESSOR="google/vit-base-patch16-224-in21k"
    # Optional: set when config.json lacks a model_type field
@@ -225,7 +225,7 @@ frontend/tests/
 1. Ensure the model artifact is uploaded and the backend has access to credentials (see *Model artifact storage* above).
 2. Start the stack with the `app` profile so the backend downloads the model into its container (include `MODEL_BASE_PROCESSOR` when tokenizer files are absent and `MODEL_DEFAULT_MODEL_TYPE` when `config.json` lacks that key):
    ```bash
-   MODEL_GCS_URI=gs://nutrisnap-models/v1 \
+   MODEL_GCS_URI=gs://nutrisnap-models-new/v1 \
    MODEL_BASE_PROCESSOR=google/vit-base-patch16-224-in21k \
    MODEL_DEFAULT_MODEL_TYPE=vit \
    docker compose --profile app up -d --build
@@ -239,6 +239,6 @@ frontend/tests/
    The JSON response should include `identified_foods` populated with the model’s top predictions.
 4. To rotate to a new model version, re-upload the folder to a new GCS path, update `MODEL_GCS_URI` (plus `MODEL_BASE_PROCESSOR`/`MODEL_DEFAULT_MODEL_TYPE` when relevant), and restart the backend container:
    ```bash
-   export MODEL_GCS_URI=gs://nutrisnap-models/v1
+   export MODEL_GCS_URI=gs://nutrisnap-models-new/v1
    docker compose --profile app up -d --build backend
    ```

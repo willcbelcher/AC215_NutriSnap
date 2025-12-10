@@ -24,7 +24,7 @@ services:
       - db
     environment:
       DATABASE_URL: postgresql://user:password@db:5432/nutrisnap_db
-      MODEL_GCS_URI: ${MODEL_GCS_URI:-gs://nutrisnap-models/v1}
+      MODEL_GCS_URI: ${MODEL_GCS_URI:-gs://nutrisnap-models-new/v1}
       MODEL_BASE_PROCESSOR: google/vit-base-patch16-224-in21k
       MODEL_DEFAULT_MODEL_TYPE: vit
       GOOGLE_APPLICATION_CREDENTIALS: /secrets/sa.json

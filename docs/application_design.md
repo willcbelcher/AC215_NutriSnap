@@ -77,13 +77,13 @@ The NutriSnap solution is built as a modern, containerized web application consi
 
 ## 5. Data Versioning and Reproducibility
 
-- **Approach**: Instead of DVC, NutriSnap stores large artifacts in Google Cloud Storage (GCS) under versioned prefixes (`gs://nutrisnap-data/<version>/...`). This keeps 100GB-scale tensors out of Git, matches our GCP hosting stack, and lets any container pull the exact snapshot it needs.
+- **Approach**: Instead of DVC, NutriSnap stores large artifacts in Google Cloud Storage (GCS) under versioned prefixes (`gs://nutrisnap-data-new/<version>/...`). This keeps 100GB-scale tensors out of Git, matches our GCP hosting stack, and lets any container pull the exact snapshot it needs.
 - **Owned artifacts**:
   - `src/preprocess/preprocess.py` downloads the Food-101 raw data, builds label maps + tensors, then writes them to `train/` and `eval/` folders inside the selected version prefix.
   - `src/train/train.py` consumes the processed tensors directly from the same prefix so that preprocessing and training remain tightly coupled to a version id.
-- **Environment switches** (wired into Docker Compose and CI settings): `GCS_PROJECT=ac215-471519`, `GCS_BUCKET=nutrisnap-data`, `GCS_DATA_VERSION=v1`. Changing the version variable is sufficient to branch experiments.
+- **Environment switches** (wired into Docker Compose and CI settings): `GCS_PROJECT=ac215-471519`, `GCS_BUCKET=nutrisnap-data-new`, `GCS_DATA_VERSION=v1`. Changing the version variable is sufficient to branch experiments.
 - **Version history**:
-  - `v1` – Baseline preprocessing of the full Food-101 dataset (224×224 resize, ImageNet normalization) created on 2024-11-10; corresponding model artifacts live at `gs://nutrisnap-data/models/v1`.
+  - `v1` – Baseline preprocessing of the full Food-101 dataset (224×224 resize, ImageNet normalization) created on 2024-11-10; corresponding model artifacts live at `gs://nutrisnap-data-new/models/v1`.
   - `v2` – More pictures and classes included for diversity of training
   - Future experiments must append `v3`, `v4`, etc., and log the rationale plus command history in the milestone notes before promotion.
 - **Repro recipe**:
@@ -104,7 +104,7 @@ The NutriSnap solution is built as a modern, containerized web application consi
   - Backbones tested: `google/vit-base-patch16-224-in21k` and `facebook/deit-tiny-patch16-224`.
   - Best run (DeiT-tiny, 3 epochs) achieved `eval_top_1=0.613` and `eval_top_5=0.866`. Loss curves are saved at `docs/train_loss.png`; full hyperparameters + outputs live in the W&B run linked from the README.
 - **Deployment impact**:
-  - Exported checkpoints are synced to weights and biases, and then the best model is pulled into `gs://nutrisnap-models/<VERSION>` for inferencing
+  - Exported checkpoints are synced to weights and biases, and then the best model is pulled into `gs://nutrisnap-models-new/<VERSION>` for inferencing
   - The FastAPI backend loads the artifact on startup using `MODEL_GCS_URI`, `MODEL_BASE_PROCESSOR`, and `MODEL_DEFAULT_MODEL_TYPE`. Rotating to a new fine-tuned model simply swaps the URI and restarts the backend container—no code changes required.
   - Because preprocessing, training, and inference all reference the same versioned prefixes, every prediction served to end users is reproducible given the stored dataset + checkpoint combination.
 
