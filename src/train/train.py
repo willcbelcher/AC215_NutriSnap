@@ -4,9 +4,6 @@ import shutil
 import sys
 from pathlib import Path
 
-os.environ.setdefault("WANDB_SILENT", "true")
-os.environ.setdefault("FAST_DEV_RUN", "0")
-
 import numpy as np
 
 import torch
