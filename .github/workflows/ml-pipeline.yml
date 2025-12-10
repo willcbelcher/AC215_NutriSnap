@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-train-deploy:
+  build-train:
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
