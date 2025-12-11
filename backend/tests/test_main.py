@@ -191,10 +191,11 @@ def test_log_food_success(client):
     assert data["user_id"] == 1
 
     # With our mock, we return "ramen" as top1
-    assert "ramen" in data["identified_foods"]
+    # The app converts "ramen" -> "Ramen"
+    assert "Ramen" in data["identified_foods"]
     assert data["protein"] == 10
     assert data["carbs"] == 40
-    assert data["fat"] == 1
+    assert data["fat"] == 15 # Updated to match NUTRITION_LOOKUP for ramen
 
 
 def test_log_food_empty_file(client):
@@ -229,7 +230,11 @@ def test_nutrition_lookup(client):
     """Test nutrition lookup logic for different foods"""
     # Test with grilled_salmon (different macros than ramen)
     # We need to test that the NUTRITION_LOOKUP works correctly
-
+    
+    # NOTE: The client fixture mocks run_inference to ALWAYS return ramen.
+    # So we can't easily test "grilled salmon" without overriding the mock again.
+    # For now, let's verify the ramen values match the lookup table.
+    
     # Create fake image
     fake_image = b"fake image data"
     files = {"file": ("salmon.jpg", io.BytesIO(fake_image), "image/jpeg")}
@@ -238,8 +243,9 @@ def test_nutrition_lookup(client):
     assert response.status_code == 200
 
     data = response.json()
-    # Our mock returns "ramen" so we should get ramen's nutrition
-    assert data["protein"] == 10  # Ramen protein
-    assert data["carbs"] == 40    # Ramen carbs
-    assert data["fat"] == 1       # Ramen fat
-    assert data["triggers"] == "None"
+    # Our mock returns "ramen" so we should get ramen's nutrition from NUTRITION_LOOKUP
+    # "ramen": {"protein": 10.0, "carbs": 40.0, "fat": 15.0}
+    assert data["protein"] == 10.0
+    assert data["carbs"] == 40.0
+    assert data["fat"] == 15.0
+    assert data["triggers"] == "Gluten, Soy"

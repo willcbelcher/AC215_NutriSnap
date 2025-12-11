@@ -1,4 +1,3 @@
-import pytest
 from unittest.mock import patch, MagicMock
 import sys
 from pathlib import Path
@@ -17,12 +16,16 @@ def test_get_food_triggers_success():
     mock_model = MagicMock()
     mock_model.generate_content.return_value = mock_response
     
-    with patch("gemini_utils.genai.GenerativeModel", return_value=mock_model):
-        triggers = gemini_utils.get_food_triggers("ramen", b"fake_image")
-        assert triggers == "Gluten, Soy"
+    # Mock GenerativeModel constructor
+    with patch("gemini_utils.GenerativeModel", return_value=mock_model):
+        # Also need to mock _init_vertex or vertexai.init to avoid errors if env vars missing
+        with patch("gemini_utils.vertexai.init"):
+            triggers = gemini_utils.get_food_triggers("ramen", b"fake_image")
+            assert triggers == "Gluten, Soy"
 
 def test_get_food_triggers_error():
     """Test error handling in trigger retrieval"""
-    with patch("gemini_utils.genai.GenerativeModel", side_effect=Exception("API Error")):
-        triggers = gemini_utils.get_food_triggers("ramen", b"fake_image")
-        assert triggers == "None"
+    with patch("gemini_utils.GenerativeModel", side_effect=Exception("API Error")):
+        with patch("gemini_utils.vertexai.init"):
+            triggers = gemini_utils.get_food_triggers("ramen", b"fake_image")
+            assert triggers == "None"
