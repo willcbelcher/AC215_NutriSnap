@@ -77,11 +77,13 @@ Environment overrides:
    gcloud auth application-default login   # persists ADC credentials locally
    ```
 2. (Optional) point to a different bucket/version:
+
    ```bash
    export GCS_BUCKET=nutrisnap-data-new
    export GCS_DATA_VERSION=v1
 
    ```
+
 3. Launch the preprocessing job (builds the image the first time and mounts `./secrets/nutrisnap-sa.json` inside the container):
    ```bash
    docker compose run --rm --profile ml nutrisnap-preprocess
@@ -150,23 +152,33 @@ The frontend can then be accessed via http://localhost:3000
 Milestone 5 covers application final cloud deployment.
 
 ### Kubernetes Deployment
-TODO: William Belcher. 
-Cover:
-- Kubernetes
-   - Deploy the application to a Kubernetes cluster.
-   - Demonstrate basic scaling behavior by varying the load and showing how the cluster responds (e.g., scaling replicas/pods).
-- Pulumi Infrastructure Code:
-   - Use Pulumi to automate the provisioning and deployment of your infrastructure (e.g., Kubernetes cluster, networking, storage,configurations, etc.) and application.
 
-### CI/CD Pipeline Implementation 
-TODO: William Belcher
-Cover:
-- Have a unit test suite for each service/container.
-- Run integration tests on the code base .
-- Deploy updates to the Kubernetes cluster upon merging changes into the main branch.
-- Achieve at least 60% line coverage. Document which functions and modules are not covered by tests.
+The frontend, backend, and database are deployed to a single GKE cluster. The `kubernetes1.png` and `kubernetes2.jpg` show screenshots of the cluster and workloads.
+
+The `/infra` directory contains the Pulumi infrastructure code that was used to deploy the GKE cluster and the database.
+
+To provision the resources, navigate to the `infra` directory and run:
+
+```bash
+cd infra
+pip install -r requirements.txt
+pulumi up
+```
+
+### CI/CD Pipeline Implementation
+
+The `/github/workflows` directory contains the GitHub Actions workflow file that was used to implement the CI/CD pipeline. We have 5 main workflows:
+
+- Backend tests
+- frontend tests
+- ML Pipeline tests
+- Linter
+- Deploy to GKE
+
+Screenshots of the actions are in `actions1.png` and `actions2.png`. The runs themselves can be found at https://github.com/willcbelcher/NutriSnap/actions.
 
 ### ML Workflow: Automated Model retraining & GCP deployment workflow
+
 - Trigger: pushes to `main` that touch `src/train/train.py`, or manual `workflow_dispatch` from the Actions tab (`ML Pipeline` workflow).
 - Purpose: smoke-check that training still runs after script changes and optionally publish the refreshed model to GCS.
 - See `.github/workflows/ml-pipeline.yml`:
@@ -186,6 +198,7 @@ NutriSnap includes comprehensive automated testing across all components to ensu
 ### Running Tests Locally
 
 **Backend Tests:**
+
 ```bash
 cd backend
 pip install -r requirements.txt
@@ -193,6 +206,7 @@ pytest --cov=. --cov-report=term
 ```
 
 **ML Pipeline Tests:**
+
 ```bash
 cd src
 pip install -e .
@@ -200,6 +214,7 @@ pytest tests/ --cov=. --cov-report=term
 ```
 
 **Frontend Tests:**
+
 ```bash
 cd frontend
 npm install
@@ -213,12 +228,14 @@ npm run test:coverage
 GitHub Actions automatically runs tests on every push and pull request to `main` and `develop` branches.
 
 **Pipeline Jobs:**
+
 - **Backend Tests**: Runs pytest with PostgreSQL service container, generates coverage reports
 - **ML Tests**: Tests GCS utilities and data processing functions
 - **Frontend Tests**: Runs Vitest component tests with coverage
 - **Linting**: Checks Python code with Ruff and TypeScript/Vue with ESLint (errors only, relaxed mode)
 
 **Viewing Results:**
+
 - CI status: Check the Actions tab in the GitHub repository
 - Coverage reports: Uploaded to Codecov after each CI run
 - Target: All tests must pass before merging
@@ -249,7 +266,7 @@ frontend/tests/
 
 ### Testing inference end-to-end
 
-1. Ensure the model artifact is uploaded and the backend has access to credentials (see *Model artifact storage* above).
+1. Ensure the model artifact is uploaded and the backend has access to credentials (see _Model artifact storage_ above).
 2. Start the stack with the `app` profile so the backend downloads the model into its container (include `MODEL_BASE_PROCESSOR` when tokenizer files are absent and `MODEL_DEFAULT_MODEL_TYPE` when `config.json` lacks that key):
    ```bash
    MODEL_GCS_URI=gs://nutrisnap-models-new/v1 \

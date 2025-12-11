@@ -2,6 +2,32 @@
 
 This document covers milestone 5, which is the final cloud deployment of the application.
 
+## Technical Deliverables
+
+### Kubernetes Deployment
+
+The frontend, backend, and database are deployed to a single GKE cluster. The `kubernetes1.png` and `kubernetes2.jpg` in this directory show screenshots of the cluster and workloads.
+
+### Pulumi Infrastructure
+
+The `/infra` directory contains the Pulumi infrastructure code that was used to deploy the GKE cluster and the database.
+
+### CI/CD Pipeline Implementation
+
+The `/github/workflows` directory contains the GitHub Actions workflow file that was used to implement the CI/CD pipeline. We have 5 main workflows:
+
+- Backend tests
+- frontend tests
+- ML Pipeline tests
+- Linter
+- Deploy to GKE
+
+Screenshots of the actions are in `actions1.png` and `actions2.png`. The runs themselves can be found at https://github.com/willcbelcher/NutriSnap/actions.
+
+### Machine Learning Workflow
+
+TODO - PRAKRIT
+
 ## Medium Blog Post
 
 ### The Problem

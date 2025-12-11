@@ -5,7 +5,7 @@
 				<div class="flex justify-between h-16">
 					<div class="flex">
 						<div class="flex-shrink-0 flex items-center">
-							<span class="text-2xl font-bold text-green-600">NutriSnap (v2)</span>
+							<span class="text-2xl font-bold text-green-600">NutriSnap</span>
 						</div>
 						<div class="hidden sm:ml-6 sm:flex sm:space-x-8">
 							<NuxtLink
