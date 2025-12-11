@@ -153,7 +153,7 @@ Milestone 5 covers application final cloud deployment.
 
 ### Kubernetes Deployment
 
-The frontend, backend, and database are deployed to a single GKE cluster. The `kubernetes1.png` and `kubernetes2.jpg` show screenshots of the cluster and workloads.
+The frontend, backend, and database are deployed to a single GKE cluster. The `docs/kubernetes1.png` and `docs/kubernetes2.jpg` show screenshots of the cluster and workloads.
 
 The `/infra` directory contains the Pulumi infrastructure code that was used to deploy the GKE cluster and the database.
 
@@ -175,7 +175,7 @@ The `/github/workflows` directory contains the GitHub Actions workflow file that
 - Linter
 - Deploy to GKE
 
-Screenshots of the actions are in `actions1.png` and `actions2.png`. The runs themselves can be found at https://github.com/willcbelcher/NutriSnap/actions.
+Screenshots of the actions are in `docs/actions1.png` and `docs/actions2.png`. The runs themselves can be found at https://github.com/willcbelcher/NutriSnap/actions.
 
 ### ML Workflow: Automated Model retraining & GCP deployment workflow
 

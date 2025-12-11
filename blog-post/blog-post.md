@@ -16,12 +16,11 @@ NutriSnap is a consumer health tool that helps people with chronic gastrointesti
 
 NutriSnap makes logging foods as simple as possible and helps users uncover hidden links between foods consumed and triggers experienced.
 
-1. Users are greeted by the home page with four views: i) trends in recent symptoms; ii) most likely triggers based on symptoms and meals;  iii) recent symptoms experienced; and iv) recent meals.
-![NutriSnap Dashboard](dashboard.png)
+1. Users are greeted by the home page with four views: i) trends in recent symptoms; ii) most likely triggers based on symptoms and meals; iii) recent symptoms experienced; and iv) recent meals.
+   ![NutriSnap Dashboard](dashboard.png)
 
 2. Users can easily log their meals by taking pictures
-![NutriSnap Food Logging](log-meal.png)
-
+   ![NutriSnap Food Logging](log-meal.png)
 
 ## Technical Implementation
 
