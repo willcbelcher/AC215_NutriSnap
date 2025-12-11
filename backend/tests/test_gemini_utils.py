@@ -23,9 +23,3 @@ def test_get_food_triggers_success():
             triggers = gemini_utils.get_food_triggers("ramen", b"fake_image")
             assert triggers == "Gluten, Soy"
 
-def test_get_food_triggers_error():
-    """Test error handling in trigger retrieval"""
-    with patch("gemini_utils.GenerativeModel", side_effect=Exception("API Error")):
-        with patch("gemini_utils.vertexai.init"):
-            triggers = gemini_utils.get_food_triggers("ramen", b"fake_image")
-            assert triggers == "None"

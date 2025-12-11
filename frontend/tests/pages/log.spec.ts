@@ -3,7 +3,7 @@ import { ref } from 'vue'
 
 // Mock Nuxt composables
 vi.mock('#app', () => ({
-  useFetch: vi.fn((url) => {
+  useFetch: vi.fn(() => {
     return { data: ref([]), pending: ref(false), error: ref(null) }
   }),
   useRuntimeConfig: vi.fn(() => ({
