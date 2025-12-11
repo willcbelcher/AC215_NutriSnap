@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  PROJECT_ID: nutrisnap-473915
   GKE_CLUSTER: nutrisnap-cluster-f05ba50
   GKE_ZONE: us-central1-a
   GAR_LOCATION: us-east4
@@ -34,11 +34,13 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      # Configure Docker to use the gcloud command-line tool as a credential
-      # helper for authentication
-      - name: Docker configuration
-        run: |-
-          gcloud auth configure-docker $GAR_LOCATION-docker.pkg.dev
+      # Login to GAR
+      - name: Login to GAR
+        uses: docker/login-action@v3
+        with:
+          registry: us-east4-docker.pkg.dev
+          username: _json_key
+          password: ${{ secrets.GCP_SA_KEY }}
 
       # Build the Backend Docker image
       - name: Build Backend
