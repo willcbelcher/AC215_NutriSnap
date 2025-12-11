@@ -76,7 +76,7 @@ jobs:
       # Restart deployments to pick up new images (since we are using :latest)
       - name: Deploy
         run: |-
-          kubectl rollout restart deployment/backend-deploy -n nutrisnap
-          kubectl rollout restart deployment/frontend-deploy -n nutrisnap
+          kubectl rollout restart deployment/backend-deploy-a1b788fb -n nutrisnap
+          kubectl rollout restart deployment/frontend-deploy-269ab09e -n nutrisnap
           kubectl rollout status deployment/backend-deploy -n nutrisnap
           kubectl rollout status deployment/frontend-deploy -n nutrisnap
