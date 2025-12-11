@@ -18,7 +18,6 @@ def test_predict_success():
     mock_id2label = {0: "ramen"}
     
     # Mock model output
-    mock_logits = MagicMock()
     # Create a tensor for logits that will result in high probability for index 0
     # We need to mock torch.softmax return value effectively
     
@@ -44,7 +43,6 @@ def test_predict_success():
             mock_processor.return_value = {"pixel_values": MagicMock()}
             
             # Mock model output
-            mock_output = MagicMock()
             # We need to mock logits. But wait, predict uses torch.softmax on logits.
             # If we don't want to rely on real torch, we should mock torch too?
             # inference.py imports torch.
