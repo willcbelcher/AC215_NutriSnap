@@ -1,0 +1,76 @@
+name: Deploy to GKE
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GKE_CLUSTER: nutrisnap-cluster-f05ba50
+  GKE_ZONE: us-central1-a
+  GAR_LOCATION: us-east4
+  REPOSITORY: nutrisnap-containers
+  BACKEND_IMAGE: nutrisnap-backend
+  FRONTEND_IMAGE: nutrisnap-frontend
+
+jobs:
+  setup-build-publish-deploy:
+    name: Setup, Build, Publish, and Deploy
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Authenticate to Google Cloud
+      - id: "auth"
+        uses: "google-github-actions/auth@v2"
+        with:
+          credentials_json: "${{ secrets.GCP_SA_KEY }}"
+
+      # Configure Docker to use the gcloud command-line tool as a credential
+      # helper for authentication
+      - name: Docker configuration
+        run: |-
+          gcloud auth configure-docker $GAR_LOCATION-docker.pkg.dev
+
+      # Build the Backend Docker image
+      - name: Build Backend
+        run: |-
+          docker build \
+            --tag "$GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$BACKEND_IMAGE:latest" \
+            --build-arg GITHUB_SHA="$GITHUB_SHA" \
+            --build-arg GITHUB_REF="$GITHUB_REF" \
+            ./backend
+
+      # Build the Frontend Docker image
+      - name: Build Frontend
+        run: |-
+          docker build \
+            --tag "$GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$FRONTEND_IMAGE:latest" \
+            --build-arg GITHUB_SHA="$GITHUB_SHA" \
+            --build-arg GITHUB_REF="$GITHUB_REF" \
+            ./frontend
+
+      # Push the Docker images to Google Artifact Registry
+      - name: Publish
+        run: |-
+          docker push "$GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$BACKEND_IMAGE:latest"
+          docker push "$GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$FRONTEND_IMAGE:latest"
+
+      # Get the GKE credentials so we can deploy to the cluster
+      - name: Set up GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER }}
+          location: ${{ env.GKE_ZONE }}
+
+      # Restart deployments to pick up new images (since we are using :latest)
+      - name: Deploy
+        run: |-
+          kubectl rollout restart deployment/backend-deploy -n nutrisnap
+          kubectl rollout restart deployment/frontend-deploy -n nutrisnap
+          kubectl rollout status deployment/backend-deploy -n nutrisnap
+          kubectl rollout status deployment/frontend-deploy -n nutrisnap
