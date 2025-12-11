@@ -1,7 +1,7 @@
 from database import engine, SessionLocal, Base
 import models
 from datetime import datetime, timedelta
-import random
+
 
 def reset_and_seed_example():
     print("⚠️  Wiping database...")

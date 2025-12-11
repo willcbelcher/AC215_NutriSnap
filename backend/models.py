@@ -28,6 +28,9 @@ class Meal(Base):
     id = Column(Integer, primary_key=True, index=True)
     image_url = Column(String)
     identified_foods = Column(String)
+    protein = Column(Float, default=0.0)
+    carbs = Column(Float, default=0.0)
+    fat = Column(Float, default=0.0)
     triggers = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     

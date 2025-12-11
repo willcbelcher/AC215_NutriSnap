@@ -1,5 +1,5 @@
 from database import engine, Base
-from models import User, Meal, Symptom
+
 from seed import seed_data
 
 def reset_database():

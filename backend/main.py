@@ -17,6 +17,20 @@ logger = logging.getLogger(__name__)
 
 MODEL_SERVICE_URL = os.getenv("MODEL_SERVICE_URL")
 
+# Simple nutrition lookup for prototype
+NUTRITION_LOOKUP = {
+    "ramen": {"protein": 10.0, "carbs": 40.0, "fat": 15.0},
+    "grilled salmon": {"protein": 30.0, "carbs": 0.0, "fat": 15.0},
+    "caesar salad": {"protein": 7.0, "carbs": 10.0, "fat": 12.0},
+    "pizza": {"protein": 12.0, "carbs": 30.0, "fat": 10.0},
+    "burger": {"protein": 25.0, "carbs": 35.0, "fat": 20.0},
+    "sushi": {"protein": 15.0, "carbs": 45.0, "fat": 5.0},
+    "pasta": {"protein": 12.0, "carbs": 60.0, "fat": 8.0},
+    "steak": {"protein": 40.0, "carbs": 0.0, "fat": 25.0},
+    "chicken breast": {"protein": 30.0, "carbs": 0.0, "fat": 3.0},
+    "rice": {"protein": 4.0, "carbs": 45.0, "fat": 0.5},
+}
+
 
 # Create tables on startup (skip during tests - conftest.py handles this)
 if os.getenv("TESTING") != "1":
@@ -243,9 +257,15 @@ async def log_food(file: UploadFile = File(...), db: Session = Depends(database.
         db.add(user)
         db.commit()
 
+    # Lookup nutrition
+    nutrition = NUTRITION_LOOKUP.get(identified_foods.lower(), {"protein": 0.0, "carbs": 0.0, "fat": 0.0})
+
     new_meal = models.Meal(
         image_url="https://via.placeholder.com/150?text=Food", # Placeholder since we aren't storing the file
         identified_foods=identified_foods,
+        protein=nutrition["protein"],
+        carbs=nutrition["carbs"],
+        fat=nutrition["fat"],
         triggers=triggers,
         user_id=1
     )

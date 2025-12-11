@@ -1,6 +1,7 @@
 import io
 from pathlib import Path
 import sys
+from datetime import datetime, timedelta
 
 # Add backend to path
 backend_dir = Path(__file__).parent.parent
@@ -129,15 +130,47 @@ def test_get_recent_activity(client, test_db):
     assert "symptom" in types
 
 
-def test_get_triggers(client):
-    """Test triggers endpoint returns hardcoded triggers"""
+def test_get_triggers(client, test_db):
+    """Test triggers endpoint returns triggers based on symptoms"""
+    # Create user
+    user = models.User(id=1, email="test@test.com", name="Test User")
+    test_db.add(user)
+    test_db.commit()
+
+    # Create symptoms
+    for i in range(3):
+        symptom = models.Symptom(
+            symptom_name="Bloating",
+            severity=5,
+            notes="Evening",
+            user_id=1,
+            created_at=datetime.utcnow()
+        )
+        test_db.add(symptom)
+    test_db.commit()
+
+    # Create meals with triggers before symptoms
+    for i in range(3):
+        meal = models.Meal(
+            image_url="https://example.com/image.jpg",
+            identified_foods="ramen",
+            protein=10,
+            carbs=40,
+            fat=5,
+            triggers="Gluten, Soy",
+            user_id=1,
+            created_at=datetime.utcnow() - timedelta(hours=1)
+        )
+        test_db.add(meal)
+    test_db.commit()
+
     response = client.get("/dashboard/triggers")
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
     assert len(data) > 0
     # Check for expected triggers
-    assert "Lactose" in data or "Gluten" in data
+    assert "Gluten" in data or "Soy" in data
 
 
 def test_log_food_success(client):

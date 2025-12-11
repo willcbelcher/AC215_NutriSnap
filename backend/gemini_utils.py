@@ -1,6 +1,6 @@
 import os
 import vertexai
-from vertexai.generative_models import GenerativeModel, Part, SafetySetting
+from vertexai.generative_models import GenerativeModel
 import logging
 
 logger = logging.getLogger(__name__)
